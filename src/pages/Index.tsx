@@ -49,6 +49,11 @@ const Index = () => {
     return unsortedPhotos[0]?.url;
   }, [unsortedPhotos]);
 
+  // Daily goal: min of 10 or available photos
+  const dailyGoal = useMemo(() => {
+    return Math.min(10, unsortedCount);
+  }, [unsortedCount]);
+
   return (
     <div className="min-h-screen bg-background">
       <Header 
@@ -68,6 +73,7 @@ const Index = () => {
             <DailyStackWidget 
               photoCount={unsortedCount} 
               organizedCount={organizedCount}
+              dailyGoal={dailyGoal}
               onClick={() => setShowSwipeSort(true)}
               coverImage={coverImage}
             />
@@ -155,6 +161,7 @@ const Index = () => {
         <SwipeSort
           photos={unsortedPhotos}
           binders={binders}
+          dailyGoal={dailyGoal}
           onClose={handleSwipeSortClose}
           onOrganizedCountChange={handleOrganizedCountChange}
           onAddPhotoToBinder={addPhotoToBinder}

@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 interface SwipeSortProps {
   photos: Photo[];
   binders: Binder[];
+  dailyGoal: number;
   onClose: (organizedPhotoIds?: string[]) => void;
   onOrganizedCountChange?: (count: number) => void;
   onAddPhotoToBinder?: (binderId: string, photo: Photo) => void;
@@ -20,9 +21,8 @@ interface SwipeSortProps {
 
 const SWIPE_THRESHOLD = 100;
 const ROTATION_RANGE = 15;
-const CELEBRATION_THRESHOLD = 10;
 
-const SwipeSort = ({ photos, binders, onClose, onOrganizedCountChange, onAddPhotoToBinder, onCreateBinder }: SwipeSortProps) => {
+const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange, onAddPhotoToBinder, onCreateBinder }: SwipeSortProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [exitDirection, setExitDirection] = useState<"left" | "right" | "up" | null>(null);
   const [showBinderPicker, setShowBinderPicker] = useState(false);
@@ -55,8 +55,8 @@ const SwipeSort = ({ photos, binders, onClose, onOrganizedCountChange, onAddPhot
     // Notify parent of the new count
     onOrganizedCountChange?.(newCount);
 
-    // Check if we hit the threshold - show summary card
-    if (newCount === CELEBRATION_THRESHOLD) {
+    // Check if we hit the daily goal - show summary card
+    if (newCount === dailyGoal && dailyGoal > 0) {
       setTimeout(() => {
         setShowSummary(true);
       }, 400);
