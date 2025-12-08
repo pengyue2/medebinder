@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Photo } from "@/types/binder";
-import { X, Heart, Pause, Play } from "lucide-react";
+import { X, Heart, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -22,13 +22,16 @@ const SLIDE_DURATION = 6000; // 6 seconds per photo
 const CROSSFADE_DURATION = 1500; // 1.5 seconds crossfade
 
 const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [nextIndex, setNextIndex] = useState(1);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [displayIndex, setDisplayIndex] = useState(0);
+  const [activeLayer, setActiveLayer] = useState<"A" | "B">("A");
+  const [layerAIndex, setLayerAIndex] = useState(0);
+  const [layerBIndex, setLayerBIndex] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
   const [showUI, setShowUI] = useState(false);
   const [isEntering, setIsEntering] = useState(true);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [kenBurnsActive, setKenBurnsActive] = useState(true);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Entry animation
   useEffect(() => {
@@ -46,19 +49,47 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
     if (isPaused || photos.length <= 1) return;
 
     const slideTimer = setInterval(() => {
-      setIsTransitioning(true);
+      // Start transition: swap which layer is visible
+      setActiveLayer(prev => prev === "A" ? "B" : "A");
       
-      // After crossfade completes, update indices
-      setTimeout(() => {
-        setCurrentIndex(prev => (prev + 1) % photos.length);
-        setNextIndex(prev => (prev + 1) % photos.length);
-        setIsTransitioning(false);
+      // Update display index for UI
+      setDisplayIndex(prev => (prev + 1) % photos.length);
+      
+      // Reset Ken Burns for the incoming photo
+      setKenBurnsActive(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setKenBurnsActive(true);
+        });
+      });
+      
+      // After crossfade completes, preload next photo on the hidden layer
+      transitionTimeoutRef.current = setTimeout(() => {
+        setLayerAIndex(prev => {
+          if (activeLayer === "A") {
+            // Layer A just became hidden, update it to the next-next photo
+            return (prev + 2) % photos.length;
+          }
+          return prev;
+        });
+        setLayerBIndex(prev => {
+          if (activeLayer === "B") {
+            // Layer B just became hidden, update it to the next-next photo
+            return (prev + 2) % photos.length;
+          }
+          return prev;
+        });
       }, CROSSFADE_DURATION);
       
     }, SLIDE_DURATION);
 
-    return () => clearInterval(slideTimer);
-  }, [isPaused, photos.length]);
+    return () => {
+      clearInterval(slideTimer);
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, [isPaused, photos.length, activeLayer]);
 
   const handleScreenTap = useCallback(() => {
     if (showUI) {
@@ -72,7 +103,7 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
 
   const toggleFavorite = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    const photoId = photos[currentIndex].id;
+    const photoId = photos[displayIndex].id;
     setFavorites(prev => {
       const newSet = new Set(prev);
       if (newSet.has(photoId)) {
@@ -82,18 +113,21 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
       }
       return newSet;
     });
-  }, [currentIndex, photos]);
+  }, [displayIndex, photos]);
 
   const handleClose = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     onClose();
   }, [onClose]);
 
-  const currentPhoto = photos[currentIndex];
-  const nextPhoto = photos[nextIndex % photos.length];
-  const currentEffect = kenBurnsEffects[currentIndex % kenBurnsEffects.length];
-  const nextEffect = kenBurnsEffects[nextIndex % kenBurnsEffects.length];
+  const photoA = photos[layerAIndex % photos.length];
+  const photoB = photos[layerBIndex % photos.length];
+  const effectA = kenBurnsEffects[layerAIndex % kenBurnsEffects.length];
+  const effectB = kenBurnsEffects[layerBIndex % kenBurnsEffects.length];
+  const currentPhoto = photos[displayIndex];
   const isFavorited = favorites.has(currentPhoto.id);
+
+  const isLayerAActive = activeLayer === "A";
 
   return (
     <div 
@@ -103,21 +137,21 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
       )}
       onClick={handleScreenTap}
     >
-      {/* Current Photo with Ken Burns */}
+      {/* Layer A */}
       <div 
         className={cn(
           "absolute inset-0 transition-opacity",
-          isTransitioning ? "opacity-0" : "opacity-100"
+          isLayerAActive ? "opacity-100 z-10" : "opacity-0 z-0"
         )}
         style={{ transitionDuration: `${CROSSFADE_DURATION}ms` }}
       >
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src={currentPhoto.url}
-            alt={currentPhoto.alt}
+            src={photoA.url}
+            alt={photoA.alt}
             className={cn(
               "w-full h-full object-cover transition-transform ease-out",
-              isPaused ? currentEffect.from : currentEffect.to
+              isPaused ? effectA.from : (isLayerAActive && kenBurnsActive ? effectA.to : effectA.from)
             )}
             style={{ 
               transitionDuration: isPaused ? "0ms" : `${SLIDE_DURATION}ms`,
@@ -126,36 +160,36 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
         </div>
       </div>
 
-      {/* Next Photo (for crossfade) with Ken Burns */}
+      {/* Layer B */}
       <div 
         className={cn(
           "absolute inset-0 transition-opacity",
-          isTransitioning ? "opacity-100" : "opacity-0"
+          !isLayerAActive ? "opacity-100 z-10" : "opacity-0 z-0"
         )}
         style={{ transitionDuration: `${CROSSFADE_DURATION}ms` }}
       >
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src={nextPhoto.url}
-            alt={nextPhoto.alt}
+            src={photoB.url}
+            alt={photoB.alt}
             className={cn(
               "w-full h-full object-cover transition-transform ease-out",
-              nextEffect.from
+              isPaused ? effectB.from : (!isLayerAActive && kenBurnsActive ? effectB.to : effectB.from)
             )}
             style={{ 
-              transitionDuration: `${SLIDE_DURATION}ms`,
+              transitionDuration: isPaused ? "0ms" : `${SLIDE_DURATION}ms`,
             }}
           />
         </div>
       </div>
 
       {/* Vignette overlay */}
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] z-20" />
 
       {/* UI Overlay */}
       <div 
         className={cn(
-          "absolute inset-0 flex flex-col justify-between transition-opacity duration-300",
+          "absolute inset-0 flex flex-col justify-between transition-opacity duration-300 z-30",
           showUI ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
       >
@@ -196,7 +230,7 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
             <div className="text-center">
               <p className="text-sm text-muted-foreground">Tap to resume</p>
               <p className="text-xs text-muted-foreground/60 mt-1">
-                {currentIndex + 1} / {photos.length}
+                {displayIndex + 1} / {photos.length}
               </p>
             </div>
             
@@ -214,8 +248,9 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
       </div>
 
       {/* Progress bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 safe-area-bottom">
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 safe-area-bottom z-30">
         <div 
+          key={displayIndex}
           className={cn(
             "h-full bg-primary transition-all ease-linear",
             isPaused && "transition-none"
