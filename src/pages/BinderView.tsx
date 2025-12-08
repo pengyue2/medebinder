@@ -15,6 +15,7 @@ const BinderView = () => {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [showExhibition, setShowExhibition] = useState(false);
+  const [isPhotoDetailOpen, setIsPhotoDetailOpen] = useState(false);
   
   const binder = getBinderById(id || "");
 
@@ -111,6 +112,7 @@ const BinderView = () => {
           selectedPhotos={selectedPhotos}
           onToggleSelection={handleToggleSelection}
           onEnterSelectionMode={handleEnterSelectionMode}
+          onPhotoDetailOpen={setIsPhotoDetailOpen}
         />
         
         {/* Hint text */}
@@ -159,10 +161,10 @@ const BinderView = () => {
         </div>
       )}
       
-      {/* Floating Action Button - Exhibition Mode */}
+      {/* Floating Action Button - Exhibition Mode (hidden in Photo Detail View) */}
       <div className={cn(
         "fixed bottom-6 right-4 z-50 transition-all duration-300 safe-area-bottom",
-        selectionMode && "translate-y-20 opacity-0 pointer-events-none"
+        (selectionMode || isPhotoDetailOpen) && "translate-y-20 opacity-0 pointer-events-none"
       )}>
         <Button
           size="lg"

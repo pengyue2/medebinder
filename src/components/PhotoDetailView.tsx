@@ -582,222 +582,101 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
               <span className="text-[6px] text-muted-foreground/60 font-medium uppercase tracking-wide">Postage</span>
             </div>
             
-            {/* Dynamic Layout based on orientation - CSS Grid */}
-            {isLandscape ? (
-              /* Landscape: Horizontal two-column grid */
-              <div 
-                className="absolute inset-4 top-6 grid gap-3"
-                style={{ 
-                  gridTemplateColumns: '1fr 1fr',
-                  gridTemplateRows: '1fr',
+            {/* Message area - top left, avoids stamp */}
+            <div className="absolute top-4 left-4 right-20 bottom-[45%]">
+              <Textarea
+                value={message}
+                onChange={handleMessageChange}
+                placeholder="Write your message here..."
+                className={cn(
+                  "w-full h-full resize-none border-none bg-transparent p-0",
+                  "text-sm leading-relaxed",
+                  "placeholder:text-muted-foreground/40",
+                  "focus-visible:ring-0 focus-visible:ring-offset-0"
+                )}
+                style={{
+                  fontFamily: "'Courier New', Courier, monospace",
+                  color: "#2c2c2c",
                 }}
-              >
-                {/* Left column - Message area (full height) */}
-                <div className="flex flex-col h-full pr-2 border-r border-muted-foreground/30">
-                  <Textarea
-                    value={message}
-                    onChange={handleMessageChange}
-                    placeholder="Write your message here..."
-                    className={cn(
-                      "flex-1 resize-none border-none bg-transparent p-0 h-full",
-                      "text-sm leading-relaxed",
-                      "placeholder:text-muted-foreground/40",
-                      "focus-visible:ring-0 focus-visible:ring-offset-0"
-                    )}
+              />
+              <div className="absolute bottom-0 right-0">
+                <span 
+                  className="text-xs"
+                  style={{ 
+                    color: message.length >= MAX_MESSAGE_LENGTH ? "#ef4444" : "#9ca3af",
+                    fontFamily: "'Courier New', Courier, monospace",
+                  }}
+                >
+                  {message.length}/{MAX_MESSAGE_LENGTH}
+                </span>
+              </div>
+            </div>
+
+            {/* Address lines - bottom left */}
+            <div className="absolute bottom-4 left-4 w-[45%] space-y-3">
+              <div className="h-px bg-muted-foreground/25" />
+              <div className="h-px bg-muted-foreground/25" />
+              <div className="h-px bg-muted-foreground/25 w-2/3" />
+            </div>
+
+            {/* Signature area - bottom right quadrant with dashed border */}
+            <AnimatePresence mode="wait">
+              {signatureDataUrl ? (
+                <motion.div
+                  key="signature"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ 
+                    opacity: 1, 
+                    scale: 1,
+                    filter: isSignaturePrinting 
+                      ? ["blur(2px)", "blur(0px)"] 
+                      : "blur(0px)",
+                  }}
+                  transition={{ 
+                    duration: 0.6,
+                    ease: [0.4, 0, 0.2, 1],
+                  }}
+                  className="absolute bottom-4 right-4 w-1/2 h-1/3 z-10 cursor-pointer border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center"
+                  onClick={() => setIsSignatureModalOpen(true)}
+                >
+                  {isSignaturePrinting && (
+                    <motion.div
+                      className="absolute inset-0 bg-foreground/10 rounded-lg"
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: 0 }}
+                      transition={{ duration: 0.6 }}
+                    />
+                  )}
+                  <img
+                    src={signatureDataUrl}
+                    alt="Your signature"
+                    className="w-full h-full object-contain p-2"
                     style={{
-                      fontFamily: "'Courier New', Courier, monospace",
-                      color: "#2c2c2c",
+                      filter: isSignaturePrinting ? "contrast(1.3)" : "none",
                     }}
                   />
-                  <div className="mt-2 text-right">
-                    <span 
-                      className="text-xs"
-                      style={{ 
-                        color: message.length >= MAX_MESSAGE_LENGTH ? "#ef4444" : "#9ca3af",
-                        fontFamily: "'Courier New', Courier, monospace",
-                      }}
-                    >
-                      {message.length}/{MAX_MESSAGE_LENGTH}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Right column - Signature area (vertically centered) */}
-                <div className="flex flex-col justify-center pl-2 pr-16">
-                  {/* Decorative address lines */}
-                  <div className="w-full space-y-3 mb-4">
-                    <div className="h-px bg-muted-foreground/25" />
-                    <div className="h-px bg-muted-foreground/25" />
-                    <div className="h-px bg-muted-foreground/25 w-2/3" />
-                  </div>
-                  
-                  {/* Signature area */}
-                  <AnimatePresence mode="wait">
-                    {signatureDataUrl ? (
-                      <motion.div
-                        key="signature"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ 
-                          opacity: 1, 
-                          scale: 1,
-                          filter: isSignaturePrinting 
-                            ? ["blur(2px)", "blur(0px)"] 
-                            : "blur(0px)",
-                        }}
-                        transition={{ 
-                          duration: 0.6,
-                          ease: [0.4, 0, 0.2, 1],
-                        }}
-                        className="w-full h-16 relative cursor-pointer"
-                        onClick={() => setIsSignatureModalOpen(true)}
-                      >
-                        {isSignaturePrinting && (
-                          <motion.div
-                            className="absolute inset-0 bg-foreground/10 rounded-lg"
-                            initial={{ opacity: 1 }}
-                            animate={{ opacity: 0 }}
-                            transition={{ duration: 0.6 }}
-                          />
-                        )}
-                        <img
-                          src={signatureDataUrl}
-                          alt="Your signature"
-                          className="w-full h-full object-contain"
-                          style={{
-                            filter: isSignaturePrinting ? "contrast(1.3)" : "none",
-                          }}
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.button 
-                        key="tap-to-sign"
-                        className={cn(
-                          "w-full h-16 border-2 border-dashed border-muted-foreground/40 rounded-lg",
-                          "flex items-center justify-center",
-                          "hover:border-primary/50 hover:bg-primary/5 transition-colors",
-                          "cursor-pointer"
-                        )}
-                        onClick={() => setIsSignatureModalOpen(true)}
-                      >
-                        <span 
-                          className="text-sm text-muted-foreground/60"
-                          style={{ fontFamily: "'Courier New', Courier, monospace" }}
-                        >
-                          Tap to Sign
-                        </span>
-                      </motion.button>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-            ) : (
-              /* Portrait: Vertical two-row grid */
-              <div 
-                className="absolute inset-4 top-24 grid gap-3"
-                style={{ 
-                  gridTemplateColumns: '1fr',
-                  gridTemplateRows: '1fr 1fr',
-                }}
-              >
-                {/* Top row - Message area (full height) */}
-                <div className="flex flex-col h-full pb-2 border-b border-muted-foreground/30">
-                  <Textarea
-                    value={message}
-                    onChange={handleMessageChange}
-                    placeholder="Write your message here..."
-                    className={cn(
-                      "flex-1 resize-none border-none bg-transparent p-0 h-full",
-                      "text-sm leading-relaxed",
-                      "placeholder:text-muted-foreground/40",
-                      "focus-visible:ring-0 focus-visible:ring-offset-0"
-                    )}
-                    style={{
-                      fontFamily: "'Courier New', Courier, monospace",
-                      color: "#2c2c2c",
-                    }}
-                  />
-                  <div className="mt-2 text-right">
-                    <span 
-                      className="text-xs"
-                      style={{ 
-                        color: message.length >= MAX_MESSAGE_LENGTH ? "#ef4444" : "#9ca3af",
-                        fontFamily: "'Courier New', Courier, monospace",
-                      }}
-                    >
-                      {message.length}/{MAX_MESSAGE_LENGTH}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Bottom row - Signature area (vertically centered) */}
-                <div className="flex flex-col justify-center pt-2">
-                  {/* Decorative address lines */}
-                  <div className="w-full space-y-3 mb-4">
-                    <div className="h-px bg-muted-foreground/25" />
-                    <div className="h-px bg-muted-foreground/25" />
-                    <div className="h-px bg-muted-foreground/25 w-2/3" />
-                  </div>
-                  
-                  {/* Signature area */}
-                  <AnimatePresence mode="wait">
-                    {signatureDataUrl ? (
-                      <motion.div
-                        key="signature"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ 
-                          opacity: 1, 
-                          scale: 1,
-                          filter: isSignaturePrinting 
-                            ? ["blur(2px)", "blur(0px)"] 
-                            : "blur(0px)",
-                        }}
-                        transition={{ 
-                          duration: 0.6,
-                          ease: [0.4, 0, 0.2, 1],
-                        }}
-                        className="w-full h-20 relative cursor-pointer"
-                        onClick={() => setIsSignatureModalOpen(true)}
-                      >
-                        {isSignaturePrinting && (
-                          <motion.div
-                            className="absolute inset-0 bg-foreground/10 rounded-lg"
-                            initial={{ opacity: 1 }}
-                            animate={{ opacity: 0 }}
-                            transition={{ duration: 0.6 }}
-                          />
-                        )}
-                        <img
-                          src={signatureDataUrl}
-                          alt="Your signature"
-                          className="w-full h-full object-contain"
-                          style={{
-                            filter: isSignaturePrinting ? "contrast(1.3)" : "none",
-                          }}
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.button 
-                        key="tap-to-sign"
-                        className={cn(
-                          "w-full h-20 border-2 border-dashed border-muted-foreground/40 rounded-lg",
-                          "flex items-center justify-center",
-                          "hover:border-primary/50 hover:bg-primary/5 transition-colors",
-                          "cursor-pointer"
-                        )}
-                        onClick={() => setIsSignatureModalOpen(true)}
-                      >
-                        <span 
-                          className="text-sm text-muted-foreground/60"
-                          style={{ fontFamily: "'Courier New', Courier, monospace" }}
-                        >
-                          Tap to Sign
-                        </span>
-                      </motion.button>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              ) : (
+                <motion.button 
+                  key="tap-to-sign"
+                  className={cn(
+                    "absolute bottom-4 right-4 w-1/2 h-1/3 z-10",
+                    "border-2 border-dashed border-muted-foreground/30 rounded-lg",
+                    "flex items-center justify-center",
+                    "hover:border-primary/50 hover:bg-primary/5 transition-colors",
+                    "cursor-pointer"
+                  )}
+                  onClick={() => setIsSignatureModalOpen(true)}
+                >
+                  <span 
+                    className="text-sm text-muted-foreground/60"
+                    style={{ fontFamily: "'Courier New', Courier, monospace" }}
+                  >
+                    Tap to Sign
+                  </span>
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
           </motion.div>
         </motion.div>
