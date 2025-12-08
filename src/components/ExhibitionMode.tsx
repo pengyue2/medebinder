@@ -18,7 +18,7 @@ const kenBurnsEffects = [
   { from: "scale-105 translate-x-2 translate-y-4", to: "scale-120 -translate-x-2 -translate-y-2" },
 ];
 
-const SLIDE_DURATION = 5000; // 5 seconds per photo
+const SLIDE_DURATION = 6000; // 6 seconds per photo
 const CROSSFADE_DURATION = 1500; // 1.5 seconds crossfade
 
 const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
