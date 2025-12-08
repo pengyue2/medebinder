@@ -25,14 +25,11 @@ export function useUnsortedPhotos() {
     });
   }, []);
 
+  // Remove photos without revoking blob URLs (used when photos are moved to binders)
   const removePhotos = useCallback((ids: string[]) => {
     setUnsortedPhotos((prev) => {
       const idsSet = new Set(ids);
-      prev.forEach((photo) => {
-        if (idsSet.has(photo.id)) {
-          URL.revokeObjectURL(photo.url);
-        }
-      });
+      // Don't revoke URLs here - photos are being moved to binders, not deleted
       return prev.filter((p) => !idsSet.has(p.id));
     });
   }, []);
