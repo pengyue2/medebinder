@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { Photo } from "@/types/binder";
 import { X, Heart, Pause, Smartphone, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,27 +9,66 @@ interface ExhibitionModeProps {
   onClose: () => void;
 }
 
-// Ken Burns effect variations - each photo gets a random effect
-const kenBurnsEffects = [
-  { from: "scale-100 translate-x-0 translate-y-0", to: "scale-110 -translate-x-4 -translate-y-2" },
-  { from: "scale-110 translate-x-4 translate-y-2", to: "scale-100 translate-x-0 translate-y-0" },
-  { from: "scale-100 -translate-x-2 translate-y-2", to: "scale-115 translate-x-2 -translate-y-4" },
-  { from: "scale-115 translate-x-0 -translate-y-4", to: "scale-105 -translate-x-4 translate-y-0" },
-  { from: "scale-105 translate-x-2 translate-y-4", to: "scale-120 -translate-x-2 -translate-y-2" },
-];
+interface CollagePhoto {
+  photo: Photo;
+  size: "hero" | "medium" | "small";
+  position: { x: number; y: number };
+  rotation: number;
+}
 
-// Alignment options for random positioning
-const verticalAlignments = ["items-start", "items-center", "items-end"] as const;
-const horizontalAlignments = ["justify-start", "justify-center", "justify-end"] as const;
+// Layout templates for 2-3 photos
+const generateCollageLayout = (count: number): CollagePhoto["size"][] => {
+  if (count === 2) {
+    // Two photos: one hero, one medium OR two mediums
+    return Math.random() > 0.5 ? ["hero", "medium"] : ["medium", "medium"];
+  }
+  // Three photos: one hero, two smaller
+  return ["hero", "small", "small"];
+};
 
-const SLIDE_DURATION = 6000;
-const CROSSFADE_DURATION = 1500;
+// Generate random position avoiding overlap
+const generatePositions = (count: number): { x: number; y: number; rotation: number }[] => {
+  const positions: { x: number; y: number; rotation: number }[] = [];
+  
+  if (count === 2) {
+    // Two photos layout
+    const layout = Math.floor(Math.random() * 3);
+    if (layout === 0) {
+      // Side by side
+      positions.push({ x: 15 + Math.random() * 10, y: 20 + Math.random() * 20, rotation: -5 + Math.random() * 10 });
+      positions.push({ x: 55 + Math.random() * 10, y: 25 + Math.random() * 20, rotation: -5 + Math.random() * 10 });
+    } else if (layout === 1) {
+      // Diagonal
+      positions.push({ x: 10 + Math.random() * 15, y: 10 + Math.random() * 15, rotation: -8 + Math.random() * 6 });
+      positions.push({ x: 50 + Math.random() * 15, y: 40 + Math.random() * 15, rotation: -3 + Math.random() * 10 });
+    } else {
+      // Stacked offset
+      positions.push({ x: 20 + Math.random() * 20, y: 15 + Math.random() * 10, rotation: -6 + Math.random() * 12 });
+      positions.push({ x: 35 + Math.random() * 20, y: 45 + Math.random() * 10, rotation: -6 + Math.random() * 12 });
+    }
+  } else {
+    // Three photos layout
+    const layout = Math.floor(Math.random() * 2);
+    if (layout === 0) {
+      // Hero left, two small right
+      positions.push({ x: 5 + Math.random() * 10, y: 15 + Math.random() * 15, rotation: -4 + Math.random() * 8 });
+      positions.push({ x: 55 + Math.random() * 10, y: 10 + Math.random() * 10, rotation: -6 + Math.random() * 12 });
+      positions.push({ x: 60 + Math.random() * 10, y: 50 + Math.random() * 10, rotation: -6 + Math.random() * 12 });
+    } else {
+      // Hero center, two corners
+      positions.push({ x: 25 + Math.random() * 15, y: 20 + Math.random() * 15, rotation: -3 + Math.random() * 6 });
+      positions.push({ x: 5 + Math.random() * 10, y: 55 + Math.random() * 10, rotation: -8 + Math.random() * 16 });
+      positions.push({ x: 65 + Math.random() * 10, y: 5 + Math.random() * 10, rotation: -8 + Math.random() * 16 });
+    }
+  }
+  
+  return positions;
+};
 
-// Generate random alignment for each slide
-const getRandomAlignment = () => ({
-  vertical: verticalAlignments[Math.floor(Math.random() * verticalAlignments.length)],
-  horizontal: horizontalAlignments[Math.floor(Math.random() * horizontalAlignments.length)],
-});
+const SCENE_DURATION = 5000; // 5 seconds per scene
+const FADE_OUT_DURATION = 1000; // 1 second fade out
+const BLACK_PAUSE = 500; // 0.5 second black
+const FADE_IN_DURATION = 1000; // 1 second fade in
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = <T,>(array: T[]): T[] => {
@@ -42,30 +81,66 @@ const shuffleArray = <T,>(array: T[]): T[] => {
 };
 
 const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
-  // Shuffled queue state
+  // Shuffled queue of photo indices
   const [shuffledQueue, setShuffledQueue] = useState<number[]>(() => 
     shuffleArray(photos.map((_, i) => i))
   );
   const [queueIndex, setQueueIndex] = useState(0);
   
-  const [activeLayer, setActiveLayer] = useState<"A" | "B">("A");
-  const [layerAIndex, setLayerAIndex] = useState(() => shuffledQueue[0] ?? 0);
-  const [layerBIndex, setLayerBIndex] = useState(() => shuffledQueue[1] ?? 0);
+  // Current scene photos (2-3 photos)
+  const [currentScene, setCurrentScene] = useState<CollagePhoto[]>([]);
+  const [sceneOpacity, setSceneOpacity] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [showUI, setShowUI] = useState(false);
   const [isEntering, setIsEntering] = useState(true);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  
   const [viewMode, setViewMode] = useState<"monitor" | "mobile">("monitor");
-  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const sceneTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Current display index from the shuffled queue
-  const displayIndex = shuffledQueue[queueIndex] ?? 0;
+  // Get next N unique photos from queue
+  const getNextScenePhotos = useCallback((startIndex: number, queue: number[]): { photos: CollagePhoto[]; nextIndex: number; newQueue: number[] } => {
+    const count = photos.length >= 3 ? (Math.random() > 0.4 ? 3 : 2) : Math.min(2, photos.length);
+    const scenePhotos: CollagePhoto[] = [];
+    const sizes = generateCollageLayout(count);
+    const positions = generatePositions(count);
+    
+    let currentIndex = startIndex;
+    let currentQueue = queue;
+    
+    for (let i = 0; i < count; i++) {
+      // Check if we need to reshuffle
+      if (currentIndex >= currentQueue.length) {
+        currentQueue = shuffleArray(photos.map((_, idx) => idx));
+        currentIndex = 0;
+      }
+      
+      const photoIndex = currentQueue[currentIndex];
+      scenePhotos.push({
+        photo: photos[photoIndex],
+        size: sizes[i],
+        position: { x: positions[i].x, y: positions[i].y },
+        rotation: positions[i].rotation,
+      });
+      currentIndex++;
+    }
+    
+    return { photos: scenePhotos, nextIndex: currentIndex, newQueue: currentQueue };
+  }, [photos]);
 
-  // Pre-generate random alignments for each photo
-  const [alignments, setAlignments] = useState<{ vertical: string; horizontal: string }[]>(() =>
-    photos.map(() => getRandomAlignment())
-  );
+  // Initialize first scene
+  useEffect(() => {
+    const { photos: initialPhotos, nextIndex, newQueue } = getNextScenePhotos(0, shuffledQueue);
+    setCurrentScene(initialPhotos);
+    setQueueIndex(nextIndex);
+    setShuffledQueue(newQueue);
+    
+    // Fade in after mount
+    setTimeout(() => {
+      setSceneOpacity(1);
+    }, 100);
+  }, []); // Only run once on mount
 
   // Entry animation
   useEffect(() => {
@@ -75,69 +150,43 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
     return () => {
       document.body.style.overflow = "";
       clearTimeout(timer);
+      if (sceneTimerRef.current) clearTimeout(sceneTimerRef.current);
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     };
   }, []);
 
-  // Slideshow logic with shuffled queue
+  // Slideshow logic
   useEffect(() => {
     if (isPaused || photos.length <= 1) return;
 
-    const slideTimer = setInterval(() => {
-      setQueueIndex(prevQueueIndex => {
-        const nextQueueIndex = prevQueueIndex + 1;
+    const runScene = () => {
+      // Wait for scene duration
+      sceneTimerRef.current = setTimeout(() => {
+        // Fade out current scene
+        setSceneOpacity(0);
         
-        // Check if we need to reshuffle (reached end of queue)
-        if (nextQueueIndex >= shuffledQueue.length) {
-          // Reshuffle and restart
-          const newShuffled = shuffleArray(photos.map((_, i) => i));
-          setShuffledQueue(newShuffled);
+        // After fade out, wait in black, then load new scene
+        transitionTimerRef.current = setTimeout(() => {
+          const { photos: nextPhotos, nextIndex, newQueue } = getNextScenePhotos(queueIndex, shuffledQueue);
+          setCurrentScene(nextPhotos);
+          setQueueIndex(nextIndex);
+          setShuffledQueue(newQueue);
           
-          // Update layers for the new cycle
-          setActiveLayer(prev => prev === "A" ? "B" : "A");
+          // After black pause, fade in new scene
           setTimeout(() => {
-            setLayerAIndex(newShuffled[0] ?? 0);
-            setLayerBIndex(newShuffled[1] ?? 0);
-          }, CROSSFADE_DURATION);
-          
-          return 0; // Reset to start of new shuffled queue
-        }
-        
-        // Normal progression through the queue
-        const nextPhotoIndex = shuffledQueue[nextQueueIndex];
-        
-        setActiveLayer(prev => {
-          const newActive = prev === "A" ? "B" : "A";
-          
-          // Update the layer that's about to become visible
-          setTimeout(() => {
-            if (newActive === "A") {
-              setLayerAIndex(nextPhotoIndex);
-            } else {
-              setLayerBIndex(nextPhotoIndex);
-            }
-          }, CROSSFADE_DURATION);
-          
-          return newActive;
-        });
-        
-        // Generate new random alignment for the next photo
-        setAlignments(prev => {
-          const newAlignments = [...prev];
-          newAlignments[nextPhotoIndex] = getRandomAlignment();
-          return newAlignments;
-        });
-        
-        return nextQueueIndex;
-      });
-    }, SLIDE_DURATION);
+            setSceneOpacity(1);
+          }, BLACK_PAUSE);
+        }, FADE_OUT_DURATION);
+      }, SCENE_DURATION);
+    };
+
+    runScene();
 
     return () => {
-      clearInterval(slideTimer);
-      if (transitionTimeoutRef.current) {
-        clearTimeout(transitionTimeoutRef.current);
-      }
+      if (sceneTimerRef.current) clearTimeout(sceneTimerRef.current);
+      if (transitionTimerRef.current) clearTimeout(transitionTimerRef.current);
     };
-  }, [isPaused, photos.length, shuffledQueue]);
+  }, [isPaused, photos.length, queueIndex, shuffledQueue, getNextScenePhotos]);
 
   const handleScreenTap = useCallback(() => {
     if (showUI) {
@@ -151,17 +200,19 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
 
   const toggleFavorite = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    const photoId = photos[displayIndex].id;
-    setFavorites(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(photoId)) {
-        newSet.delete(photoId);
-      } else {
-        newSet.add(photoId);
-      }
-      return newSet;
-    });
-  }, [displayIndex, photos]);
+    if (currentScene.length > 0) {
+      const photoId = currentScene[0].photo.id;
+      setFavorites(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(photoId)) {
+          newSet.delete(photoId);
+        } else {
+          newSet.add(photoId);
+        }
+        return newSet;
+      });
+    }
+  }, [currentScene]);
 
   const handleClose = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -173,16 +224,21 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
     setViewMode(prev => prev === "monitor" ? "mobile" : "monitor");
   }, []);
 
-  const photoA = photos[layerAIndex % photos.length];
-  const photoB = photos[layerBIndex % photos.length];
-  const effectA = kenBurnsEffects[layerAIndex % kenBurnsEffects.length];
-  const effectB = kenBurnsEffects[layerBIndex % kenBurnsEffects.length];
-  const currentPhoto = photos[displayIndex];
-  const isFavorited = favorites.has(currentPhoto.id);
+  const isFavorited = currentScene.length > 0 && favorites.has(currentScene[0].photo.id);
 
-  const isLayerAActive = activeLayer === "A";
-  const alignmentA = alignments[layerAIndex % photos.length];
-  const alignmentB = alignments[layerBIndex % photos.length];
+  // Size classes for collage photos
+  const getSizeStyles = (size: CollagePhoto["size"], viewMode: string) => {
+    const base = viewMode === "mobile" ? {
+      hero: "w-[55%] max-h-[45%]",
+      medium: "w-[45%] max-h-[40%]",
+      small: "w-[35%] max-h-[30%]",
+    } : {
+      hero: "w-[45%] max-h-[55%]",
+      medium: "w-[35%] max-h-[45%]",
+      small: "w-[25%] max-h-[35%]",
+    };
+    return base[size];
+  };
 
   return (
     <div 
@@ -203,64 +259,42 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
         )}
         style={{ backgroundColor: "#000000" }}
       >
-        {/* Layer A */}
+        {/* Collage Scene */}
         <div 
-          className={cn(
-            "absolute inset-0 transition-opacity flex p-8",
-            alignmentA?.vertical || "items-center",
-            alignmentA?.horizontal || "justify-center",
-            isLayerAActive ? "opacity-100 z-10" : "opacity-0 z-0"
-          )}
-          style={{ transitionDuration: `${CROSSFADE_DURATION}ms` }}
+          className="absolute inset-0 transition-opacity"
+          style={{ 
+            opacity: sceneOpacity,
+            transitionDuration: sceneOpacity === 1 ? `${FADE_IN_DURATION}ms` : `${FADE_OUT_DURATION}ms`,
+          }}
         >
-          <div className={cn(
-            "max-w-full max-h-full overflow-hidden",
-            viewMode === "mobile" ? "max-w-[90%] max-h-[80%]" : "max-w-[85%] max-h-[85%]"
-          )}>
-            <img
-              src={photoA.url}
-              alt={photoA.alt}
+          {currentScene.map((item, index) => (
+            <div
+              key={`${item.photo.id}-${index}`}
               className={cn(
-                "max-w-full max-h-full object-contain transition-transform ease-out",
-                isPaused ? effectA.from : (isLayerAActive ? effectA.to : effectA.from)
+                "absolute transition-all duration-1000",
+                getSizeStyles(item.size, viewMode)
               )}
-              style={{ 
-                transitionDuration: isPaused ? "0ms" : `${SLIDE_DURATION}ms`,
+              style={{
+                left: `${item.position.x}%`,
+                top: `${item.position.y}%`,
+                transform: `rotate(${item.rotation}deg)`,
+                zIndex: item.size === "hero" ? 10 : 5,
               }}
-            />
-          </div>
-        </div>
-
-        {/* Layer B */}
-        <div 
-          className={cn(
-            "absolute inset-0 transition-opacity flex p-8",
-            alignmentB?.vertical || "items-center",
-            alignmentB?.horizontal || "justify-center",
-            !isLayerAActive ? "opacity-100 z-10" : "opacity-0 z-0"
-          )}
-          style={{ transitionDuration: `${CROSSFADE_DURATION}ms` }}
-        >
-          <div className={cn(
-            "max-w-full max-h-full overflow-hidden",
-            viewMode === "mobile" ? "max-w-[90%] max-h-[80%]" : "max-w-[85%] max-h-[85%]"
-          )}>
-            <img
-              src={photoB.url}
-              alt={photoB.alt}
-              className={cn(
-                "max-w-full max-h-full object-contain transition-transform ease-out",
-                isPaused ? effectB.from : (!isLayerAActive ? effectB.to : effectB.from)
-              )}
-              style={{ 
-                transitionDuration: isPaused ? "0ms" : `${SLIDE_DURATION}ms`,
-              }}
-            />
-          </div>
+            >
+              <div className="relative w-full h-full shadow-2xl rounded-lg overflow-hidden bg-neutral-900">
+                <img
+                  src={item.photo.url}
+                  alt={item.photo.alt}
+                  className="w-full h-full object-contain"
+                  draggable={false}
+                />
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Subtle vignette overlay */}
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.3)_100%)] z-20" />
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)] z-20" />
 
         {/* UI Overlay */}
         <div 
@@ -316,11 +350,11 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
                 )}
               </Button>
               
-              {/* Play/Resume hint */}
+              {/* Scene info */}
               <div className="text-center min-w-[80px]">
                 <p className="text-sm text-muted-foreground">Tap to resume</p>
                 <p className="text-xs text-muted-foreground/60 mt-1">
-                  {displayIndex + 1} / {photos.length}
+                  {currentScene.length} photos
                 </p>
               </div>
               
@@ -340,14 +374,14 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
         {/* Progress bar */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 safe-area-bottom z-30">
           <div 
-            key={displayIndex}
+            key={queueIndex}
             className={cn(
               "h-full bg-primary transition-all ease-linear",
               isPaused && "transition-none"
             )}
             style={{
               width: isPaused ? "0%" : "100%",
-              transitionDuration: isPaused ? "0ms" : `${SLIDE_DURATION}ms`,
+              transitionDuration: isPaused ? "0ms" : `${SCENE_DURATION}ms`,
             }}
           />
         </div>
