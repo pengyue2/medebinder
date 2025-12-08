@@ -10,6 +10,7 @@ interface PhotoGridProps {
   selectedPhotos: Set<string>;
   onToggleSelection: (photoId: string) => void;
   onEnterSelectionMode: (photoId: string) => void;
+  onPhotoDetailOpen?: (isOpen: boolean) => void;
 }
 
 const PhotoGrid = ({ 
@@ -17,7 +18,8 @@ const PhotoGrid = ({
   selectionMode, 
   selectedPhotos, 
   onToggleSelection,
-  onEnterSelectionMode 
+  onEnterSelectionMode,
+  onPhotoDetailOpen
 }: PhotoGridProps) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
@@ -41,7 +43,13 @@ const PhotoGrid = ({
       onToggleSelection(photo.id);
     } else {
       setSelectedPhoto(photo);
+      onPhotoDetailOpen?.(true);
     }
+  };
+
+  const handleCloseDetail = () => {
+    setSelectedPhoto(null);
+    onPhotoDetailOpen?.(false);
   };
 
   return (
@@ -101,7 +109,7 @@ const PhotoGrid = ({
       {selectedPhoto && !selectionMode && (
         <PhotoDetailView
           photo={selectedPhoto}
-          onClose={() => setSelectedPhoto(null)}
+          onClose={handleCloseDetail}
         />
       )}
     </>
