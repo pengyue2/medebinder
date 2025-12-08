@@ -193,7 +193,7 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-[90%] max-w-sm m-auto"
+                className="w-[90%] max-w-sm"
               >
                 <div className="glass-strong rounded-3xl p-6">
                   <h3 className="text-lg font-bold text-foreground mb-4 text-center">
@@ -228,7 +228,7 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="w-[90%] max-w-sm m-auto"
+                className="w-[90%] max-w-sm"
               >
                 <div className="glass-strong rounded-3xl p-8 text-center bg-gradient-to-br from-primary/10 via-background to-accent/10">
                   {/* Check Circle Icon */}
