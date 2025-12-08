@@ -181,116 +181,10 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
         <div className="w-10" /> {/* Spacer */}
       </div>
 
-      {/* Cards stack OR Summary Card */}
+      {/* Cards stack */}
       <div className="absolute inset-0 flex items-center justify-center pt-20 pb-32">
         <AnimatePresence mode="sync">
-          {showSummaryCard ? (
-            // Summary Card
-            showPhotoPicker ? (
-              // Photo Picker Grid
-              <motion.div
-                key="photo-picker"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                className="w-[90%] max-w-sm"
-              >
-                <div className="glass-strong rounded-3xl p-6">
-                  <h3 className="text-lg font-bold text-foreground mb-4 text-center">
-                    Select a photo for your postcard
-                  </h3>
-                  <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto justify-items-center">
-                    {organizedPhotos.map((photo) => (
-                      <button
-                        key={photo.id}
-                        onClick={() => handlePhotoSelect(photo)}
-                        className="aspect-square rounded-xl overflow-hidden ring-2 ring-transparent hover:ring-primary transition-all duration-200"
-                      >
-                        <img
-                          src={photo.url}
-                          alt={photo.alt}
-                          className="w-full h-full object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => setShowPhotoPicker(false)}
-                    className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    ← Back
-                  </button>
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="summary"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="w-[90%] max-w-sm"
-              >
-                <div className="glass-strong rounded-3xl p-8 text-center bg-gradient-to-br from-primary/10 via-background to-accent/10">
-                  {/* Check Circle Icon */}
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                    className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center"
-                  >
-                    <CheckCircle className="w-12 h-12 text-primary" />
-                  </motion.div>
-
-                  {/* Title */}
-                  <motion.h2
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-2xl font-bold text-foreground mb-2"
-                  >
-                    Daily Ritual Complete!
-                  </motion.h2>
-
-                  {/* Subtitle */}
-                  <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="text-muted-foreground mb-8"
-                  >
-                    You organized {organizedPhotos.length} memories.
-                  </motion.p>
-
-                  {/* Primary Button */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <Button
-                      onClick={handleCreatePostcard}
-                      size="lg"
-                      className="w-full rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity text-primary-foreground font-semibold shadow-lg"
-                    >
-                      <Stamp className="w-5 h-5 mr-2" />
-                      Create Today's Postcard
-                    </Button>
-                  </motion.div>
-
-                  {/* Secondary Link */}
-                  <motion.button
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.6 }}
-                    onClick={() => onClose(organizedPhotos.map(p => p.id), true)}
-                    className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Back to Home
-                  </motion.button>
-                </div>
-              </motion.div>
-            )
-          ) : currentPhoto ? (
+          {!showSummaryCard && currentPhoto ? (
             // Regular card stack
             <motion.div
               key="card-stack"
@@ -418,6 +312,132 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
           </p>
         </div>
       )}
+
+      {/* Summary Card Overlay - Fixed position, independent of parent */}
+      <AnimatePresence>
+        {showSummaryCard && !showPhotoPicker && (
+          <motion.div
+            key="summary-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] w-screen h-screen flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-[90vw] max-h-[90vh] w-full sm:max-w-sm"
+            >
+              <div className="glass-strong rounded-3xl p-8 text-center bg-gradient-to-br from-primary/10 via-background to-accent/10">
+                {/* Check Circle Icon */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                  className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center"
+                >
+                  <CheckCircle className="w-12 h-12 text-primary" />
+                </motion.div>
+
+                {/* Title */}
+                <motion.h2
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-2xl font-bold text-foreground mb-2"
+                >
+                  Daily Ritual Complete!
+                </motion.h2>
+
+                {/* Subtitle */}
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-muted-foreground mb-8"
+                >
+                  You organized {organizedPhotos.length} memories.
+                </motion.p>
+
+                {/* Primary Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <Button
+                    onClick={handleCreatePostcard}
+                    size="lg"
+                    className="w-full rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity text-primary-foreground font-semibold shadow-lg"
+                  >
+                    <Stamp className="w-5 h-5 mr-2" />
+                    Create Today's Postcard
+                  </Button>
+                </motion.div>
+
+                {/* Secondary Link */}
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  onClick={() => onClose(organizedPhotos.map(p => p.id), true)}
+                  className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Back to Home
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Photo Picker Overlay - Fixed position, independent of parent */}
+      <AnimatePresence>
+        {showSummaryCard && showPhotoPicker && (
+          <motion.div
+            key="photo-picker-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] w-screen h-screen flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="max-w-[90vw] max-h-[90vh] w-full sm:max-w-sm"
+            >
+              <div className="glass-strong rounded-3xl p-6">
+                <h3 className="text-lg font-bold text-foreground mb-4 text-center">
+                  Select a photo for your postcard
+                </h3>
+                <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto justify-items-center">
+                  {organizedPhotos.map((photo) => (
+                    <button
+                      key={photo.id}
+                      onClick={() => handlePhotoSelect(photo)}
+                      className="aspect-square rounded-xl overflow-hidden ring-2 ring-transparent hover:ring-primary transition-all duration-200"
+                    >
+                      <img
+                        src={photo.url}
+                        alt={photo.alt}
+                        className="w-full h-full object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setShowPhotoPicker(false)}
+                  className="w-full mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  ← Back
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Binder picker modal */}
       <AnimatePresence>
