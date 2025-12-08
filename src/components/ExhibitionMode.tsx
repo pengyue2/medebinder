@@ -55,7 +55,7 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
   const [showUI, setShowUI] = useState(false);
   const [isEntering, setIsEntering] = useState(true);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [kenBurnsActive, setKenBurnsActive] = useState(true);
+  
   const [viewMode, setViewMode] = useState<"monitor" | "mobile">("monitor");
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -125,13 +125,6 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
           const newAlignments = [...prev];
           newAlignments[nextPhotoIndex] = getRandomAlignment();
           return newAlignments;
-        });
-        
-        setKenBurnsActive(false);
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            setKenBurnsActive(true);
-          });
         });
         
         return nextQueueIndex;
@@ -229,7 +222,7 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
               alt={photoA.alt}
               className={cn(
                 "max-w-full max-h-full object-contain transition-transform ease-out",
-                isPaused ? effectA.from : (isLayerAActive && kenBurnsActive ? effectA.to : effectA.from)
+                isPaused ? effectA.from : (isLayerAActive ? effectA.to : effectA.from)
               )}
               style={{ 
                 transitionDuration: isPaused ? "0ms" : `${SLIDE_DURATION}ms`,
@@ -257,7 +250,7 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
               alt={photoB.alt}
               className={cn(
                 "max-w-full max-h-full object-contain transition-transform ease-out",
-                isPaused ? effectB.from : (!isLayerAActive && kenBurnsActive ? effectB.to : effectB.from)
+                isPaused ? effectB.from : (!isLayerAActive ? effectB.to : effectB.from)
               )}
               style={{ 
                 transitionDuration: isPaused ? "0ms" : `${SLIDE_DURATION}ms`,
