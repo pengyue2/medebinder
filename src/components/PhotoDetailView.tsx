@@ -37,6 +37,14 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
   const springLightboxX = useSpring(lightboxX, { stiffness: 300, damping: 30 });
   const springLightboxY = useSpring(lightboxY, { stiffness: 300, damping: 30 });
 
+  // Lock body scroll when modal opens
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
   // Detect image orientation
   useEffect(() => {
     const img = new Image();
