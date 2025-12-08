@@ -8,6 +8,7 @@ interface BindersContextType {
   setSearchQuery: (query: string) => void;
   createBinder: (name: string) => Binder;
   deleteBinder: (id: string) => void;
+  renameBinder: (id: string, newName: string) => void;
   addPhotoToBinder: (binderId: string, photo: Photo) => void;
   getBinderById: (id: string) => Binder | undefined;
   totalCount: number;
@@ -33,6 +34,12 @@ export function BindersProvider({ children }: { children: ReactNode }) {
 
   const deleteBinder = useCallback((id: string) => {
     setBinders((prev) => prev.filter((b) => b.id !== id));
+  }, []);
+
+  const renameBinder = useCallback((id: string, newName: string) => {
+    setBinders((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, title: newName.trim() } : b))
+    );
   }, []);
 
   const addPhotoToBinder = useCallback((binderId: string, photo: Photo) => {
@@ -73,11 +80,12 @@ export function BindersProvider({ children }: { children: ReactNode }) {
       setSearchQuery,
       createBinder,
       deleteBinder,
+      renameBinder,
       addPhotoToBinder,
       getBinderById,
       totalCount: binders.length,
     }),
-    [binders, filteredBinders, searchQuery, createBinder, deleteBinder, addPhotoToBinder, getBinderById]
+    [binders, filteredBinders, searchQuery, createBinder, deleteBinder, renameBinder, addPhotoToBinder, getBinderById]
   );
 
   return (
