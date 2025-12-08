@@ -193,13 +193,13 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="w-full max-w-sm mx-auto px-8"
+                className="w-[90%] max-w-sm m-auto"
               >
                 <div className="glass-strong rounded-3xl p-6">
                   <h3 className="text-lg font-bold text-foreground mb-4 text-center">
                     Select a photo for your postcard
                   </h3>
-                  <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto">
+                  <div className="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto justify-items-center">
                     {organizedPhotos.map((photo) => (
                       <button
                         key={photo.id}
@@ -228,7 +228,7 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                className="w-full max-w-sm mx-auto px-8"
+                className="w-[90%] max-w-sm m-auto"
               >
                 <div className="glass-strong rounded-3xl p-8 text-center bg-gradient-to-br from-primary/10 via-background to-accent/10">
                   {/* Check Circle Icon */}
