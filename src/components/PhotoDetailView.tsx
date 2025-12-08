@@ -383,18 +383,33 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
               backfaceVisibility: "hidden",
             }}
           >
-            <img
-              src={photo.url}
-              alt={photo.alt}
-              className="w-full h-full object-cover"
-              draggable={false}
+            {/* Blurred ambient background */}
+            <div 
+              className="absolute inset-0"
+              style={{
+                backgroundImage: `url(${photo.url})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                filter: "blur(30px) brightness(0.5)",
+                transform: "scale(1.2)",
+              }}
             />
             
+            {/* Photo container - fit, don't crop */}
+            <div className="absolute inset-0 flex items-center justify-center p-4">
+              <img
+                src={photo.url}
+                alt={photo.alt}
+                className="max-w-full max-h-full object-contain rounded-lg"
+                draggable={false}
+              />
+            </div>
+            
             {/* Photo frame border */}
-            <div className="absolute inset-0 border-[6px] border-card/80 rounded-2xl pointer-events-none" />
+            <div className="absolute inset-0 border-[6px] border-card/30 rounded-2xl pointer-events-none" />
             
             {/* Subtle gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />
             
             {/* Shine effect on hover */}
             <motion.div
