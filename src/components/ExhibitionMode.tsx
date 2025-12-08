@@ -31,11 +31,26 @@ const getRandomAlignment = () => ({
   horizontal: horizontalAlignments[Math.floor(Math.random() * horizontalAlignments.length)],
 });
 
+// Fisher-Yates shuffle algorithm
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
-  const [displayIndex, setDisplayIndex] = useState(0);
+  // Shuffled queue state
+  const [shuffledQueue, setShuffledQueue] = useState<number[]>(() => 
+    shuffleArray(photos.map((_, i) => i))
+  );
+  const [queueIndex, setQueueIndex] = useState(0);
+  
   const [activeLayer, setActiveLayer] = useState<"A" | "B">("A");
-  const [layerAIndex, setLayerAIndex] = useState(0);
-  const [layerBIndex, setLayerBIndex] = useState(1);
+  const [layerAIndex, setLayerAIndex] = useState(() => shuffledQueue[0] ?? 0);
+  const [layerBIndex, setLayerBIndex] = useState(() => shuffledQueue[1] ?? 0);
   const [isPaused, setIsPaused] = useState(false);
   const [showUI, setShowUI] = useState(false);
   const [isEntering, setIsEntering] = useState(true);
@@ -43,6 +58,9 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
   const [kenBurnsActive, setKenBurnsActive] = useState(true);
   const [viewMode, setViewMode] = useState<"monitor" | "mobile">("monitor");
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Current display index from the shuffled queue
+  const displayIndex = shuffledQueue[queueIndex] ?? 0;
 
   // Pre-generate random alignments for each photo
   const [alignments, setAlignments] = useState<{ vertical: string; horizontal: string }[]>(() =>
@@ -60,44 +78,64 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
     };
   }, []);
 
-  // Slideshow logic
+  // Slideshow logic with shuffled queue
   useEffect(() => {
     if (isPaused || photos.length <= 1) return;
 
     const slideTimer = setInterval(() => {
-      setActiveLayer(prev => prev === "A" ? "B" : "A");
-      setDisplayIndex(prev => (prev + 1) % photos.length);
-      
-      // Generate new random alignment for the next-next photo
-      setAlignments(prev => {
-        const newAlignments = [...prev];
-        const nextNextIndex = (displayIndex + 2) % photos.length;
-        newAlignments[nextNextIndex] = getRandomAlignment();
-        return newAlignments;
-      });
-      
-      setKenBurnsActive(false);
-      requestAnimationFrame(() => {
+      setQueueIndex(prevQueueIndex => {
+        const nextQueueIndex = prevQueueIndex + 1;
+        
+        // Check if we need to reshuffle (reached end of queue)
+        if (nextQueueIndex >= shuffledQueue.length) {
+          // Reshuffle and restart
+          const newShuffled = shuffleArray(photos.map((_, i) => i));
+          setShuffledQueue(newShuffled);
+          
+          // Update layers for the new cycle
+          setActiveLayer(prev => prev === "A" ? "B" : "A");
+          setTimeout(() => {
+            setLayerAIndex(newShuffled[0] ?? 0);
+            setLayerBIndex(newShuffled[1] ?? 0);
+          }, CROSSFADE_DURATION);
+          
+          return 0; // Reset to start of new shuffled queue
+        }
+        
+        // Normal progression through the queue
+        const nextPhotoIndex = shuffledQueue[nextQueueIndex];
+        
+        setActiveLayer(prev => {
+          const newActive = prev === "A" ? "B" : "A";
+          
+          // Update the layer that's about to become visible
+          setTimeout(() => {
+            if (newActive === "A") {
+              setLayerAIndex(nextPhotoIndex);
+            } else {
+              setLayerBIndex(nextPhotoIndex);
+            }
+          }, CROSSFADE_DURATION);
+          
+          return newActive;
+        });
+        
+        // Generate new random alignment for the next photo
+        setAlignments(prev => {
+          const newAlignments = [...prev];
+          newAlignments[nextPhotoIndex] = getRandomAlignment();
+          return newAlignments;
+        });
+        
+        setKenBurnsActive(false);
         requestAnimationFrame(() => {
-          setKenBurnsActive(true);
+          requestAnimationFrame(() => {
+            setKenBurnsActive(true);
+          });
         });
+        
+        return nextQueueIndex;
       });
-      
-      transitionTimeoutRef.current = setTimeout(() => {
-        setLayerAIndex(prev => {
-          if (activeLayer === "A") {
-            return (prev + 2) % photos.length;
-          }
-          return prev;
-        });
-        setLayerBIndex(prev => {
-          if (activeLayer === "B") {
-            return (prev + 2) % photos.length;
-          }
-          return prev;
-        });
-      }, CROSSFADE_DURATION);
-      
     }, SLIDE_DURATION);
 
     return () => {
@@ -106,7 +144,7 @@ const ExhibitionMode = ({ photos, onClose }: ExhibitionModeProps) => {
         clearTimeout(transitionTimeoutRef.current);
       }
     };
-  }, [isPaused, photos.length, activeLayer, displayIndex]);
+  }, [isPaused, photos.length, shuffledQueue]);
 
   const handleScreenTap = useCallback(() => {
     if (showUI) {
