@@ -218,7 +218,7 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
       `;
       document.body.appendChild(container);
 
-      // === FRONT CARD (Photo with blurred background) ===
+      // === FRONT CARD (Photo with plastic frame style) ===
       const frontCard = document.createElement("div");
       frontCard.style.cssText = `
         width: ${cardWidth}px;
@@ -230,42 +230,20 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         border: 1px solid rgba(255, 255, 255, 0.1);
       `;
       
-      // Blurred ambient background
-      const blurredBg = document.createElement("div");
-      blurredBg.style.cssText = `
-        position: absolute;
-        inset: 0;
-        background-image: url(${photo.url});
-        background-size: cover;
-        background-position: center;
-        filter: blur(30px) brightness(0.5);
-        transform: scale(1.2);
-      `;
-      frontCard.appendChild(blurredBg);
-      
-      // Photo container
-      const photoContainer = document.createElement("div");
-      photoContainer.style.cssText = `
-        position: absolute;
-        inset: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      `;
-      
+      // Full photo as background
       const photoImg = document.createElement("img");
       photoImg.src = photo.url;
       photoImg.crossOrigin = "anonymous";
       photoImg.style.cssText = `
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        border-radius: 8px;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       `;
-      photoContainer.appendChild(photoImg);
-      frontCard.appendChild(photoContainer);
+      frontCard.appendChild(photoImg);
       
-      // Photo frame border
+      // Photo frame border (plastic style edge)
       const frameBorder = document.createElement("div");
       frameBorder.style.cssText = `
         position: absolute;
