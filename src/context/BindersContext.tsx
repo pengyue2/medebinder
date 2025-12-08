@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
-import { mockBinders } from "@/data/mockBinders";
 import type { Binder, Photo } from "@/types/binder";
 
 interface BindersContextType {
@@ -17,7 +16,7 @@ interface BindersContextType {
 const BindersContext = createContext<BindersContextType | null>(null);
 
 export function BindersProvider({ children }: { children: ReactNode }) {
-  const [binders, setBinders] = useState<Binder[]>(mockBinders);
+  const [binders, setBinders] = useState<Binder[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   const createBinder = useCallback((name: string) => {

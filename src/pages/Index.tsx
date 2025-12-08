@@ -98,30 +98,50 @@ const Index = () => {
         </div>
         
         {/* Binder Grid - Bookshelf style */}
-        <div className="grid grid-cols-2 gap-4">
-          {filteredBinders.map((binder, index) => (
-            <div
-              key={binder.id}
-              className="animate-fade-in"
-              style={{
-                animationDelay: `${index * 100}ms`,
-                animationFillMode: "backwards",
-              }}
-            >
-              <BinderCard binder={binder} />
-            </div>
-          ))}
-        </div>
+        {filteredBinders.length > 0 && (
+          <div className="grid grid-cols-2 gap-4">
+            {filteredBinders.map((binder, index) => (
+              <div
+                key={binder.id}
+                className="animate-fade-in"
+                style={{
+                  animationDelay: `${index * 100}ms`,
+                  animationFillMode: "backwards",
+                }}
+              >
+                <BinderCard binder={binder} />
+              </div>
+            ))}
+          </div>
+        )}
 
-        {/* No results state */}
+        {/* No results state for search */}
         {filteredBinders.length === 0 && searchQuery && (
           <div className="text-center py-8">
             <p className="text-muted-foreground">No binders match "{searchQuery}"</p>
           </div>
         )}
         
-        {/* Empty state hint */}
-        {!searchQuery && (
+        {/* Empty state - no binders yet */}
+        {totalCount === 0 && !searchQuery && (
+          <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-6">
+              <span className="text-4xl">📚</span>
+            </div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              No Binders yet
+            </h3>
+            <p className="text-muted-foreground mb-6 max-w-xs">
+              Start by importing your photos, then organize them into beautiful collections.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Tap <span className="font-medium">Import Photos</span> in the header to get started
+            </p>
+          </div>
+        )}
+        
+        {/* Hint when binders exist */}
+        {totalCount > 0 && !searchQuery && (
           <div className="mt-8 text-center">
             <p className="text-sm text-muted-foreground">
               Tap + to create a new binder
