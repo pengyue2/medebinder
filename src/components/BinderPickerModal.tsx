@@ -1,16 +1,30 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Binder } from "@/types/binder";
-import { X } from "lucide-react";
+import { X, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 interface BinderPickerModalProps {
   binders: Binder[];
   onSelect: (binderId: string) => void;
   onClose: () => void;
+  onCreateBinder?: (name: string) => Binder;
 }
 
-const BinderPickerModal = ({ binders, onSelect, onClose }: BinderPickerModalProps) => {
+const BinderPickerModal = ({ binders, onSelect, onClose, onCreateBinder }: BinderPickerModalProps) => {
+  const [showCreateInput, setShowCreateInput] = useState(false);
+  const [newBinderName, setNewBinderName] = useState("");
+
+  const handleCreateBinder = () => {
+    if (!newBinderName.trim() || !onCreateBinder) return;
+    const newBinder = onCreateBinder(newBinderName.trim());
+    setNewBinderName("");
+    setShowCreateInput(false);
+    onSelect(newBinder.id);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -56,12 +70,18 @@ const BinderPickerModal = ({ binders, onSelect, onClose }: BinderPickerModalProp
               )}
             >
               {/* Cover thumbnail */}
-              <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                <img
-                  src={binder.coverImage}
-                  alt={binder.title}
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-muted">
+                {binder.coverImage ? (
+                  <img
+                    src={binder.coverImage}
+                    alt={binder.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <ImageIcon className="w-5 h-5 text-muted-foreground/50" />
+                  </div>
+                )}
               </div>
               
               {/* Info */}
@@ -75,12 +95,42 @@ const BinderPickerModal = ({ binders, onSelect, onClose }: BinderPickerModalProp
         
         {/* Create new binder option */}
         <div className="p-4 border-t border-border">
-          <Button
-            variant="outline"
-            className="w-full rounded-xl"
-          >
-            Create New Binder
-          </Button>
+          <AnimatePresence mode="wait">
+            {showCreateInput ? (
+              <motion.div
+                key="input"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex gap-2"
+              >
+                <Input
+                  placeholder="Binder name..."
+                  value={newBinderName}
+                  onChange={(e) => setNewBinderName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleCreateBinder()}
+                  autoFocus
+                  className="flex-1"
+                />
+                <Button onClick={handleCreateBinder} disabled={!newBinderName.trim()}>
+                  Create
+                </Button>
+                <Button variant="ghost" onClick={() => setShowCreateInput(false)}>
+                  Cancel
+                </Button>
+              </motion.div>
+            ) : (
+              <motion.div key="button" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                <Button
+                  variant="outline"
+                  className="w-full rounded-xl"
+                  onClick={() => setShowCreateInput(true)}
+                >
+                  Create New Binder
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </motion.div>

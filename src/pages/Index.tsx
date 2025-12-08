@@ -5,7 +5,7 @@ import DailyStackWidget from "@/components/DailyStackWidget";
 import SwipeSort from "@/components/SwipeSort";
 import CreateBinderModal from "@/components/CreateBinderModal";
 import { useUnsortedPhotos } from "@/hooks/useUnsortedPhotos";
-import { useBinders } from "@/hooks/useBinders";
+import { useBinders } from "@/context/BindersContext";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -15,7 +15,7 @@ const Index = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   const { unsortedPhotos, addPhotos, removePhotos, count: unsortedCount } = useUnsortedPhotos();
-  const { filteredBinders, searchQuery, setSearchQuery, createBinder, totalCount, binders } = useBinders();
+  const { filteredBinders, searchQuery, setSearchQuery, createBinder, totalCount, binders, addPhotoToBinder } = useBinders();
   const { toast } = useToast();
 
   const handleOrganizedCountChange = useCallback((count: number) => {
@@ -137,6 +137,8 @@ const Index = () => {
           binders={binders}
           onClose={handleSwipeSortClose}
           onOrganizedCountChange={handleOrganizedCountChange}
+          onAddPhotoToBinder={addPhotoToBinder}
+          onCreateBinder={createBinder}
         />
       )}
 
