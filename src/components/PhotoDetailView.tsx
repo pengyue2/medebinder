@@ -23,12 +23,11 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
   const [isSignaturePrinting, setIsSignaturePrinting] = useState(false);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
-  const [isLandscape, setIsLandscape] = useState(true);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [photoAspectRatio, setPhotoAspectRatio] = useState(1); // width/height
   const cardRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [imageRect, setImageRect] = useState<DOMRect | null>(null);
-
   // Lightbox zoom state
   const lightboxScale = useMotionValue(1);
   const lightboxX = useMotionValue(0);
@@ -45,11 +44,11 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
     };
   }, []);
 
-  // Detect image orientation
+  // Detect image aspect ratio
   useEffect(() => {
     const img = new Image();
     img.onload = () => {
-      setIsLandscape(img.naturalWidth >= img.naturalHeight);
+      setPhotoAspectRatio(img.naturalWidth / img.naturalHeight);
     };
     img.src = photo.url;
   }, [photo.url]);
@@ -187,218 +186,180 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
     lightboxY.set(newY);
   }, [lightboxScale, lightboxX, lightboxY]);
 
+  // Determine if card is tall (portrait) for layout decisions
+  const isTallCard = photoAspectRatio < 0.8;
+
   const handleShare = useCallback(async () => {
     setIsGeneratingShare(true);
     
     try {
-      // Dynamically import html2canvas to reduce initial bundle
       const html2canvas = (await import("html2canvas")).default;
       
-      // Get actual card dimensions from the DOM
-      const cardElement = cardRef.current;
-      const cardWidth = (cardElement?.offsetWidth || 300) * 2; // Scale for quality
-      const cardHeight = (cardElement?.offsetHeight || 400) * 2;
-      const scaleFactor = 2;
+      // Use the photo's actual aspect ratio for the card
+      const baseWidth = 600;
+      const cardWidth = baseWidth;
+      const cardHeight = baseWidth / photoAspectRatio;
       
-      // Always side-by-side: Photo LEFT, Postcard Back RIGHT
-      const collageContainer = document.createElement("div");
-      collageContainer.style.cssText = `
+      // Create container - single card that looks like the preview
+      const container = document.createElement("div");
+      container.style.cssText = `
         position: fixed;
         left: -9999px;
         top: 0;
-        display: flex;
-        flex-direction: row;
-        gap: ${16 * scaleFactor}px;
-        padding: ${24 * scaleFactor}px;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        border-radius: ${16 * scaleFactor}px;
-      `;
-      document.body.appendChild(collageContainer);
-
-      // Create front card (photo) with blurred background wings
-      const frontCard = document.createElement("div");
-      frontCard.style.cssText = `
         width: ${cardWidth}px;
         height: ${cardHeight}px;
-        border-radius: ${12 * scaleFactor}px;
+        border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 ${10 * scaleFactor}px ${30 * scaleFactor}px rgba(0,0,0,0.3);
-        position: relative;
-      `;
-      
-      // Blurred background (wings effect)
-      const blurredBg = document.createElement("div");
-      blurredBg.style.cssText = `
-        position: absolute;
-        inset: 0;
-        background-image: url(${photo.url});
-        background-size: cover;
-        background-position: center;
-        filter: blur(30px) brightness(0.6);
-        transform: scale(1.3);
-      `;
-      frontCard.appendChild(blurredBg);
-      
-      // Centered photo container with object-fit: contain
-      const photoContainer = document.createElement("div");
-      photoContainer.style.cssText = `
-        position: absolute;
-        inset: 0;
+        background: linear-gradient(135deg, #f5f0e6 0%, #ebe5d9 50%, #f0ebe0 100%);
         display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: ${12 * scaleFactor}px;
+        flex-direction: ${isTallCard ? 'column' : 'row'};
       `;
+      document.body.appendChild(container);
+
+      // Photo section - takes 50% of the card
+      const photoSection = document.createElement("div");
+      photoSection.style.cssText = `
+        ${isTallCard ? 'width: 100%; height: 50%;' : 'width: 50%; height: 100%;'}
+        position: relative;
+        overflow: hidden;
+      `;
+      
       const photoImg = document.createElement("img");
       photoImg.src = photo.url;
-      photoImg.style.cssText = `
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        border-radius: ${8 * scaleFactor}px;
-      `;
       photoImg.crossOrigin = "anonymous";
-      photoContainer.appendChild(photoImg);
-      frontCard.appendChild(photoContainer);
-      collageContainer.appendChild(frontCard);
+      photoImg.style.cssText = `
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      `;
+      photoSection.appendChild(photoImg);
+      container.appendChild(photoSection);
 
-      // Create back card (postcard) with 2x2 grid layout
-      const backCard = document.createElement("div");
-      backCard.style.cssText = `
-        width: ${cardWidth}px;
-        height: ${cardHeight}px;
-        border-radius: ${12 * scaleFactor}px;
-        overflow: hidden;
-        box-shadow: 0 ${10 * scaleFactor}px ${30 * scaleFactor}px rgba(0,0,0,0.3);
-        background: linear-gradient(135deg, #f5f0e6 0%, #ebe5d9 50%, #f0ebe0 100%);
-        padding: ${16 * scaleFactor}px;
+      // Postcard back section - takes 50% of the card
+      const backSection = document.createElement("div");
+      backSection.style.cssText = `
+        ${isTallCard ? 'width: 100%; height: 50%;' : 'width: 50%; height: 100%;'}
+        padding: 16px;
         position: relative;
+        display: flex;
+        flex-direction: column;
         box-sizing: border-box;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: 1fr 1fr;
-        gap: ${8 * scaleFactor}px;
       `;
 
-      // Postage stamp - top right
+      // Stamp - top right of back section
       const stamp = document.createElement("div");
       stamp.style.cssText = `
         position: absolute;
-        top: ${12 * scaleFactor}px;
-        right: ${12 * scaleFactor}px;
-        width: ${48 * scaleFactor}px;
-        height: ${60 * scaleFactor}px;
+        top: 12px;
+        right: 12px;
+        width: 40px;
+        height: 50px;
         background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.2));
-        border: ${2 * scaleFactor}px dashed rgba(100,100,100,0.4);
-        border-radius: ${4 * scaleFactor}px;
+        border: 2px dashed rgba(100,100,100,0.4);
+        border-radius: 4px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        z-index: 10;
       `;
       stamp.innerHTML = `
-        <div style="width: ${30 * scaleFactor}px; height: ${30 * scaleFactor}px; background: rgba(100,100,100,0.2); border-radius: ${4 * scaleFactor}px; margin-bottom: ${4 * scaleFactor}px;"></div>
-        <span style="font-size: ${6 * scaleFactor}px; color: rgba(100,100,100,0.6); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Postage</span>
+        <div style="width: 24px; height: 24px; background: rgba(100,100,100,0.2); border-radius: 4px; margin-bottom: 4px;"></div>
+        <span style="font-size: 6px; color: rgba(100,100,100,0.6); font-weight: 500; text-transform: uppercase;">Postage</span>
       `;
-      backCard.appendChild(stamp);
+      backSection.appendChild(stamp);
 
-      // Top-left quadrant - Message area (spans both top cells)
+      // Message area - top portion
       const messageArea = document.createElement("div");
       messageArea.style.cssText = `
-        grid-column: 1 / 3;
-        grid-row: 1;
+        flex: 1;
         font-family: 'Courier New', Courier, monospace;
-        font-size: ${12 * scaleFactor}px;
+        font-size: 14px;
         color: #2c2c2c;
-        line-height: 1.6;
+        line-height: 1.5;
+        padding-right: 50px;
         white-space: pre-wrap;
         word-break: break-word;
-        padding: ${8 * scaleFactor}px;
-        padding-right: ${70 * scaleFactor}px;
-        display: flex;
-        align-items: flex-start;
       `;
       messageArea.textContent = message || "Wish you were here!";
-      backCard.appendChild(messageArea);
+      backSection.appendChild(messageArea);
 
-      // Bottom-left quadrant - Address lines
+      // Bottom row: address lines + signature
+      const bottomRow = document.createElement("div");
+      bottomRow.style.cssText = `
+        display: flex;
+        gap: 12px;
+        margin-top: auto;
+      `;
+
+      // Address lines
       const addressArea = document.createElement("div");
       addressArea.style.cssText = `
-        grid-column: 1;
-        grid-row: 2;
+        flex: 1;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        padding: ${8 * scaleFactor}px;
+        justify-content: flex-end;
+        gap: 10px;
       `;
       addressArea.innerHTML = `
-        <div style="height: 1px; background: rgba(100,100,100,0.25); margin-bottom: ${14 * scaleFactor}px;"></div>
-        <div style="height: 1px; background: rgba(100,100,100,0.25); margin-bottom: ${14 * scaleFactor}px;"></div>
-        <div style="height: 1px; background: rgba(100,100,100,0.25); width: 80%;"></div>
+        <div style="height: 1px; background: rgba(100,100,100,0.25);"></div>
+        <div style="height: 1px; background: rgba(100,100,100,0.25);"></div>
+        <div style="height: 1px; background: rgba(100,100,100,0.25); width: 70%;"></div>
       `;
-      backCard.appendChild(addressArea);
+      bottomRow.appendChild(addressArea);
 
-      // Bottom-right quadrant - Signature area (50% width, 50% height)
+      // Signature area
       const signatureArea = document.createElement("div");
       signatureArea.style.cssText = `
-        grid-column: 2;
-        grid-row: 2;
+        flex: 1;
+        height: 80px;
         display: flex;
-        flex-direction: column;
-        justify-content: center;
         align-items: center;
-        padding: ${8 * scaleFactor}px;
+        justify-content: center;
       `;
 
       if (signatureDataUrl) {
         const sigImg = document.createElement("img");
         sigImg.src = signatureDataUrl;
-        sigImg.style.cssText = `width: 100%; height: 100%; object-fit: contain;`;
+        sigImg.style.cssText = `max-width: 100%; max-height: 100%; object-fit: contain;`;
         signatureArea.appendChild(sigImg);
       } else {
         const sigPlaceholder = document.createElement("div");
         sigPlaceholder.style.cssText = `
           width: 100%;
           height: 100%;
-          border: ${2 * scaleFactor}px dashed rgba(100,100,100,0.4);
-          border-radius: ${8 * scaleFactor}px;
+          border: 2px dashed rgba(100,100,100,0.4);
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: 'Courier New', Courier, monospace;
-          font-size: ${11 * scaleFactor}px;
+          font-size: 12px;
           color: rgba(100,100,100,0.6);
         `;
         sigPlaceholder.textContent = "Your Signature";
         signatureArea.appendChild(sigPlaceholder);
       }
+      bottomRow.appendChild(signatureArea);
+      backSection.appendChild(bottomRow);
+      container.appendChild(backSection);
 
-      backCard.appendChild(signatureArea);
-      collageContainer.appendChild(backCard);
-
-      // Wait for images to load
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Capture the collage
-      const canvas = await html2canvas(collageContainer, {
+      const canvas = await html2canvas(container, {
         backgroundColor: null,
         scale: 2,
         useCORS: true,
         allowTaint: true,
       });
 
-      // Clean up
-      document.body.removeChild(collageContainer);
+      document.body.removeChild(container);
 
-      // Convert to blob
       const blob = await new Promise<Blob>((resolve) => {
         canvas.toBlob((b) => resolve(b!), "image/png", 1.0);
       });
 
       const file = new File([blob], "postcard.png", { type: "image/png" });
 
-      // Try native share first
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share({
           files: [file],
@@ -407,7 +368,6 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         });
         toast.success("Shared successfully!");
       } else {
-        // Fallback: download the image
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -422,7 +382,7 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
     } finally {
       setIsGeneratingShare(false);
     }
-  }, [photo.url, message, signatureDataUrl]);
+  }, [photo.url, message, signatureDataUrl, photoAspectRatio, isTallCard]);
 
   return (
     <motion.div
@@ -461,13 +421,11 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 20 }}
       >
-        {/* Tilt wrapper - applies parallax effect */}
+        {/* Tilt wrapper - applies parallax effect with dynamic aspect ratio */}
         <motion.div
-          className={cn(
-            "relative w-full",
-            isLandscape ? "aspect-[4/3]" : "aspect-[3/4]"
-          )}
+          className="relative w-full"
           style={{
+            aspectRatio: photoAspectRatio,
             transformStyle: "preserve-3d",
             rotateX: isFlipped ? 0 : rotateX,
             rotateY: isFlipped ? 0 : rotateY,
@@ -582,44 +540,56 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
               <span className="text-[6px] text-muted-foreground/60 font-medium uppercase tracking-wide">Postage</span>
             </div>
             
-            {/* Message area - top left, avoids stamp */}
-            <div className="absolute top-4 left-4 right-20 bottom-[45%]">
-              <Textarea
-                value={message}
-                onChange={handleMessageChange}
-                placeholder="Write your message here..."
-                className={cn(
-                  "w-full h-full resize-none border-none bg-transparent p-0",
-                  "text-sm leading-relaxed",
-                  "placeholder:text-muted-foreground/40",
-                  "focus-visible:ring-0 focus-visible:ring-offset-0"
-                )}
-                style={{
-                  fontFamily: "'Courier New', Courier, monospace",
-                  color: "#2c2c2c",
-                }}
-              />
-              <div className="absolute bottom-0 right-0">
-                <span 
-                  className="text-xs"
-                  style={{ 
-                    color: message.length >= MAX_MESSAGE_LENGTH ? "#ef4444" : "#9ca3af",
+            {/* Flexbox layout that adapts to card shape */}
+            <div className={cn(
+              "absolute inset-4 flex gap-3",
+              isTallCard ? "flex-col" : "flex-row"
+            )}>
+              {/* Message area */}
+              <div className="flex-1 flex flex-col pr-14">
+                <Textarea
+                  value={message}
+                  onChange={handleMessageChange}
+                  placeholder="Write your message here..."
+                  className={cn(
+                    "w-full flex-1 resize-none border-none bg-transparent p-0",
+                    "text-sm leading-relaxed",
+                    "placeholder:text-muted-foreground/40",
+                    "focus-visible:ring-0 focus-visible:ring-offset-0"
+                  )}
+                  style={{
                     fontFamily: "'Courier New', Courier, monospace",
+                    color: "#2c2c2c",
                   }}
-                >
-                  {message.length}/{MAX_MESSAGE_LENGTH}
-                </span>
+                />
+                <div className="flex justify-end mt-1">
+                  <span 
+                    className="text-xs"
+                    style={{ 
+                      color: message.length >= MAX_MESSAGE_LENGTH ? "#ef4444" : "#9ca3af",
+                      fontFamily: "'Courier New', Courier, monospace",
+                    }}
+                  >
+                    {message.length}/{MAX_MESSAGE_LENGTH}
+                  </span>
+                </div>
+              </div>
+
+              {/* Bottom section: Address + Signature */}
+              <div className={cn(
+                "flex gap-3",
+                isTallCard ? "flex-row h-24" : "flex-col flex-1"
+              )}>
+                {/* Address lines */}
+                <div className="flex-1 flex flex-col justify-end space-y-2">
+                  <div className="h-px bg-muted-foreground/25" />
+                  <div className="h-px bg-muted-foreground/25" />
+                  <div className="h-px bg-muted-foreground/25 w-2/3" />
+                </div>
               </div>
             </div>
 
-            {/* Address lines - bottom left */}
-            <div className="absolute bottom-4 left-4 w-[45%] space-y-3">
-              <div className="h-px bg-muted-foreground/25" />
-              <div className="h-px bg-muted-foreground/25" />
-              <div className="h-px bg-muted-foreground/25 w-2/3" />
-            </div>
-
-            {/* Signature area - bottom right quadrant with dashed border */}
+            {/* Signature area - positioned absolutely in bottom right */}
             <AnimatePresence mode="wait">
               {signatureDataUrl ? (
                 <motion.div
@@ -636,7 +606,10 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
                     duration: 0.6,
                     ease: [0.4, 0, 0.2, 1],
                   }}
-                  className="absolute bottom-4 right-4 w-1/2 h-1/3 z-10 cursor-pointer border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center"
+                  className={cn(
+                    "absolute z-10 cursor-pointer border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center",
+                    isTallCard ? "bottom-4 right-4 w-2/5 h-20" : "bottom-4 right-4 w-1/3 h-1/4"
+                  )}
                   onClick={() => setIsSignatureModalOpen(true)}
                 >
                   {isSignaturePrinting && (
@@ -660,11 +633,8 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
                 <motion.button 
                   key="tap-to-sign"
                   className={cn(
-                    "absolute bottom-4 right-4 w-1/2 h-1/3 z-10",
-                    "border-2 border-dashed border-muted-foreground/30 rounded-lg",
-                    "flex items-center justify-center",
-                    "hover:border-primary/50 hover:bg-primary/5 transition-colors",
-                    "cursor-pointer"
+                    "absolute z-10 border-2 border-dashed border-muted-foreground/30 rounded-lg flex items-center justify-center hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer",
+                    isTallCard ? "bottom-4 right-4 w-2/5 h-20" : "bottom-4 right-4 w-1/3 h-1/4"
                   )}
                   onClick={() => setIsSignatureModalOpen(true)}
                 >
