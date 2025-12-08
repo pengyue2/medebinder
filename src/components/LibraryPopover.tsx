@@ -64,10 +64,9 @@ const LibraryPopover = ({ onPhotosLoaded, unsortedCount }: LibraryPopoverProps) 
         </PopoverTrigger>
         
         <PopoverContent 
-          className="w-72 z-50" 
+          className="w-72 fixed top-24 left-1/2 -translate-x-1/2 z-50" 
           align="center"
-          side="bottom"
-          sideOffset={16}
+          sideOffset={0}
         >
           <div className="space-y-4">
             <div className="space-y-1">
