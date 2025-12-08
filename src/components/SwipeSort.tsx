@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 interface SwipeSortProps {
   photos: Photo[];
   binders: Binder[];
-  onClose: () => void;
+  onClose: (organizedPhotoIds?: string[]) => void;
   onOrganizedCountChange?: (count: number) => void;
 }
 
@@ -165,7 +165,7 @@ const SwipeSort = ({ photos, binders, onClose, onOrganizedCountChange }: SwipeSo
           variant="ghost"
           size="icon"
           className="rounded-full glass"
-          onClick={onClose}
+          onClick={() => onClose(organizedPhotos.map(p => p.id))}
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
@@ -279,7 +279,7 @@ const SwipeSort = ({ photos, binders, onClose, onOrganizedCountChange }: SwipeSo
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6 }}
-                    onClick={onClose}
+                    onClick={() => onClose(organizedPhotos.map(p => p.id))}
                     className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Back to Home

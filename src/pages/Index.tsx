@@ -1,35 +1,59 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Header from "@/components/Header";
 import BinderCard from "@/components/BinderCard";
 import DailyStackWidget from "@/components/DailyStackWidget";
 import SwipeSort from "@/components/SwipeSort";
 import { mockBinders } from "@/data/mockBinders";
-import { dailyStackPhotos } from "@/data/dailyStack";
 import { useUnsortedPhotos } from "@/hooks/useUnsortedPhotos";
 
 const Index = () => {
   const [showSwipeSort, setShowSwipeSort] = useState(false);
   const [organizedCount, setOrganizedCount] = useState(0);
-  const { unsortedPhotos, addPhotos, count: unsortedCount } = useUnsortedPhotos();
+  const { unsortedPhotos, addPhotos, removePhotos, count: unsortedCount } = useUnsortedPhotos();
 
   const handleOrganizedCountChange = useCallback((count: number) => {
     setOrganizedCount(count);
   }, []);
+
+  const handleSwipeSortClose = useCallback((organizedPhotoIds?: string[]) => {
+    setShowSwipeSort(false);
+    // Remove organized photos from unsorted list
+    if (organizedPhotoIds && organizedPhotoIds.length > 0) {
+      removePhotos(organizedPhotoIds);
+    }
+    setOrganizedCount(0);
+  }, [removePhotos]);
+
+  const coverImage = useMemo(() => {
+    return unsortedPhotos[0]?.url;
+  }, [unsortedPhotos]);
 
   return (
     <div className="min-h-screen bg-background">
       <Header onPhotosLoaded={addPhotos} unsortedCount={unsortedCount} />
       
       <main className="px-4 py-6 max-w-lg mx-auto safe-area-bottom">
-        {/* Daily Stack Widget */}
-        <div className="mb-6">
-          <DailyStackWidget 
-            photoCount={dailyStackPhotos.length} 
-            organizedCount={organizedCount}
-            onClick={() => setShowSwipeSort(true)}
-            coverImage={dailyStackPhotos[0]?.url}
-          />
-        </div>
+        {/* Daily Stack Widget - only show if there are unsorted photos */}
+        {unsortedCount > 0 && (
+          <div className="mb-6">
+            <DailyStackWidget 
+              photoCount={unsortedCount} 
+              organizedCount={organizedCount}
+              onClick={() => setShowSwipeSort(true)}
+              coverImage={coverImage}
+            />
+          </div>
+        )}
+
+        {/* Empty state for no photos */}
+        {unsortedCount === 0 && (
+          <div className="mb-6 p-6 rounded-2xl border-2 border-dashed border-muted-foreground/30 text-center">
+            <p className="text-muted-foreground mb-2">No photos to organize</p>
+            <p className="text-sm text-muted-foreground">
+              Tap the ⚙️ icon above to upload photos
+            </p>
+          </div>
+        )}
         
         {/* Section Title */}
         <div className="mb-6">
@@ -66,11 +90,11 @@ const Index = () => {
       </main>
 
       {/* Swipe Sort Overlay */}
-      {showSwipeSort && (
+      {showSwipeSort && unsortedPhotos.length > 0 && (
         <SwipeSort
-          photos={dailyStackPhotos}
+          photos={unsortedPhotos}
           binders={mockBinders}
-          onClose={() => setShowSwipeSort(false)}
+          onClose={handleSwipeSortClose}
           onOrganizedCountChange={handleOrganizedCountChange}
         />
       )}

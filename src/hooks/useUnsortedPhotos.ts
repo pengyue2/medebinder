@@ -1,21 +1,14 @@
 import { useState, useCallback } from "react";
-
-export interface UnsortedPhoto {
-  id: string;
-  url: string;
-  file: File;
-  addedAt: Date;
-}
+import type { Photo } from "@/types/binder";
 
 export function useUnsortedPhotos() {
-  const [unsortedPhotos, setUnsortedPhotos] = useState<UnsortedPhoto[]>([]);
+  const [unsortedPhotos, setUnsortedPhotos] = useState<Photo[]>([]);
 
   const addPhotos = useCallback((files: FileList) => {
-    const newPhotos: UnsortedPhoto[] = Array.from(files).map((file) => ({
+    const newPhotos: Photo[] = Array.from(files).map((file) => ({
       id: `unsorted-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       url: URL.createObjectURL(file),
-      file,
-      addedAt: new Date(),
+      alt: file.name,
     }));
 
     setUnsortedPhotos((prev) => [...prev, ...newPhotos]);
@@ -32,6 +25,18 @@ export function useUnsortedPhotos() {
     });
   }, []);
 
+  const removePhotos = useCallback((ids: string[]) => {
+    setUnsortedPhotos((prev) => {
+      const idsSet = new Set(ids);
+      prev.forEach((photo) => {
+        if (idsSet.has(photo.id)) {
+          URL.revokeObjectURL(photo.url);
+        }
+      });
+      return prev.filter((p) => !idsSet.has(p.id));
+    });
+  }, []);
+
   const clearAll = useCallback(() => {
     unsortedPhotos.forEach((photo) => {
       URL.revokeObjectURL(photo.url);
@@ -43,6 +48,7 @@ export function useUnsortedPhotos() {
     unsortedPhotos,
     addPhotos,
     removePhoto,
+    removePhotos,
     clearAll,
     count: unsortedPhotos.length,
   };
