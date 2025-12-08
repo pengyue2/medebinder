@@ -5,10 +5,12 @@ import DailyStackWidget from "@/components/DailyStackWidget";
 import SwipeSort from "@/components/SwipeSort";
 import { mockBinders } from "@/data/mockBinders";
 import { dailyStackPhotos } from "@/data/dailyStack";
+import { useUnsortedPhotos } from "@/hooks/useUnsortedPhotos";
 
 const Index = () => {
   const [showSwipeSort, setShowSwipeSort] = useState(false);
   const [organizedCount, setOrganizedCount] = useState(0);
+  const { unsortedPhotos, addPhotos, count: unsortedCount } = useUnsortedPhotos();
 
   const handleOrganizedCountChange = useCallback((count: number) => {
     setOrganizedCount(count);
@@ -16,7 +18,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <Header onPhotosLoaded={addPhotos} unsortedCount={unsortedCount} />
       
       <main className="px-4 py-6 max-w-lg mx-auto safe-area-bottom">
         {/* Daily Stack Widget */}
