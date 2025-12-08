@@ -195,65 +195,120 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
     try {
       const html2canvas = (await import("html2canvas")).default;
       
-      // Use the photo's actual aspect ratio for the card
-      const baseWidth = 600;
-      const cardWidth = baseWidth;
-      const cardHeight = baseWidth / photoAspectRatio;
+      // Use the photo's actual aspect ratio for each card
+      const cardWidth = 400;
+      const cardHeight = cardWidth / photoAspectRatio;
+      const gap = 24;
       
-      // Create container - single card that looks like the preview
+      // Total container: two cards side by side
+      const totalWidth = cardWidth * 2 + gap;
+      const totalHeight = cardHeight;
+      
+      // Create main container
       const container = document.createElement("div");
       container.style.cssText = `
         position: fixed;
         left: -9999px;
         top: 0;
+        width: ${totalWidth}px;
+        height: ${totalHeight}px;
+        display: flex;
+        gap: ${gap}px;
+        background: transparent;
+      `;
+      document.body.appendChild(container);
+
+      // === FRONT CARD (Photo with blurred background) ===
+      const frontCard = document.createElement("div");
+      frontCard.style.cssText = `
         width: ${cardWidth}px;
         height: ${cardHeight}px;
         border-radius: 16px;
         overflow: hidden;
-        background: linear-gradient(135deg, #f5f0e6 0%, #ebe5d9 50%, #f0ebe0 100%);
-        display: flex;
-        flex-direction: ${isTallCard ? 'column' : 'row'};
-      `;
-      document.body.appendChild(container);
-
-      // Photo section - takes 50% of the card
-      const photoSection = document.createElement("div");
-      photoSection.style.cssText = `
-        ${isTallCard ? 'width: 100%; height: 50%;' : 'width: 50%; height: 100%;'}
         position: relative;
-        overflow: hidden;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      `;
+      
+      // Blurred ambient background
+      const blurredBg = document.createElement("div");
+      blurredBg.style.cssText = `
+        position: absolute;
+        inset: 0;
+        background-image: url(${photo.url});
+        background-size: cover;
+        background-position: center;
+        filter: blur(30px) brightness(0.5);
+        transform: scale(1.2);
+      `;
+      frontCard.appendChild(blurredBg);
+      
+      // Photo container
+      const photoContainer = document.createElement("div");
+      photoContainer.style.cssText = `
+        position: absolute;
+        inset: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       `;
       
       const photoImg = document.createElement("img");
       photoImg.src = photo.url;
       photoImg.crossOrigin = "anonymous";
       photoImg.style.cssText = `
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 8px;
       `;
-      photoSection.appendChild(photoImg);
-      container.appendChild(photoSection);
+      photoContainer.appendChild(photoImg);
+      frontCard.appendChild(photoContainer);
+      
+      // Photo frame border
+      const frameBorder = document.createElement("div");
+      frameBorder.style.cssText = `
+        position: absolute;
+        inset: 0;
+        border: 6px solid rgba(255, 255, 255, 0.3);
+        border-radius: 16px;
+        pointer-events: none;
+      `;
+      frontCard.appendChild(frameBorder);
+      
+      container.appendChild(frontCard);
 
-      // Postcard back section - takes 50% of the card
-      const backSection = document.createElement("div");
-      backSection.style.cssText = `
-        ${isTallCard ? 'width: 100%; height: 50%;' : 'width: 50%; height: 100%;'}
-        padding: 16px;
+      // === BACK CARD (Postcard text side) ===
+      const backCard = document.createElement("div");
+      backCard.style.cssText = `
+        width: ${cardWidth}px;
+        height: ${cardHeight}px;
+        border-radius: 16px;
+        overflow: hidden;
         position: relative;
-        display: flex;
-        flex-direction: column;
-        box-sizing: border-box;
+        background: linear-gradient(135deg, #f5f0e6 0%, #ebe5d9 50%, #f0ebe0 100%);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(0, 0, 0, 0.1);
       `;
+      
+      // Paper texture
+      const paperTexture = document.createElement("div");
+      paperTexture.style.cssText = `
+        position: absolute;
+        inset: 0;
+        opacity: 0.3;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%' height='100%' filter='url(%23noise)'/%3E%3C/svg%3E");
+      `;
+      backCard.appendChild(paperTexture);
 
-      // Stamp - top right of back section
+      // Stamp - top right
       const stamp = document.createElement("div");
       stamp.style.cssText = `
         position: absolute;
-        top: 12px;
-        right: 12px;
-        width: 40px;
-        height: 50px;
+        top: 16px;
+        right: 16px;
+        width: 48px;
+        height: 64px;
         background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.2));
         border: 2px dashed rgba(100,100,100,0.4);
         border-radius: 4px;
@@ -263,31 +318,40 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         justify-content: center;
       `;
       stamp.innerHTML = `
-        <div style="width: 24px; height: 24px; background: rgba(100,100,100,0.2); border-radius: 4px; margin-bottom: 4px;"></div>
-        <span style="font-size: 6px; color: rgba(100,100,100,0.6); font-weight: 500; text-transform: uppercase;">Postage</span>
+        <div style="width: 32px; height: 32px; background: rgba(100,100,100,0.2); border-radius: 4px; margin-bottom: 4px;"></div>
+        <span style="font-size: 8px; color: rgba(100,100,100,0.6); font-weight: 500; text-transform: uppercase;">Postage</span>
       `;
-      backSection.appendChild(stamp);
+      backCard.appendChild(stamp);
 
-      // Message area - top portion
+      // Content container
+      const contentContainer = document.createElement("div");
+      contentContainer.style.cssText = `
+        position: absolute;
+        inset: 16px;
+        display: flex;
+        flex-direction: column;
+      `;
+
+      // Message area
       const messageArea = document.createElement("div");
       messageArea.style.cssText = `
         flex: 1;
         font-family: 'Courier New', Courier, monospace;
         font-size: 14px;
         color: #2c2c2c;
-        line-height: 1.5;
-        padding-right: 50px;
+        line-height: 1.6;
+        padding-right: 70px;
         white-space: pre-wrap;
         word-break: break-word;
       `;
       messageArea.textContent = message || "Wish you were here!";
-      backSection.appendChild(messageArea);
+      contentContainer.appendChild(messageArea);
 
-      // Bottom row: address lines + signature
-      const bottomRow = document.createElement("div");
-      bottomRow.style.cssText = `
+      // Bottom section
+      const bottomSection = document.createElement("div");
+      bottomSection.style.cssText = `
         display: flex;
-        gap: 12px;
+        gap: 16px;
         margin-top: auto;
       `;
 
@@ -298,19 +362,19 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
-        gap: 10px;
+        gap: 12px;
       `;
       addressArea.innerHTML = `
         <div style="height: 1px; background: rgba(100,100,100,0.25);"></div>
         <div style="height: 1px; background: rgba(100,100,100,0.25);"></div>
         <div style="height: 1px; background: rgba(100,100,100,0.25); width: 70%;"></div>
       `;
-      bottomRow.appendChild(addressArea);
+      bottomSection.appendChild(addressArea);
 
       // Signature area
       const signatureArea = document.createElement("div");
       signatureArea.style.cssText = `
-        flex: 1;
+        width: 120px;
         height: 80px;
         display: flex;
         align-items: center;
@@ -339,9 +403,10 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         sigPlaceholder.textContent = "Your Signature";
         signatureArea.appendChild(sigPlaceholder);
       }
-      bottomRow.appendChild(signatureArea);
-      backSection.appendChild(bottomRow);
-      container.appendChild(backSection);
+      bottomSection.appendChild(signatureArea);
+      contentContainer.appendChild(bottomSection);
+      backCard.appendChild(contentContainer);
+      container.appendChild(backCard);
 
       await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -382,7 +447,7 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
     } finally {
       setIsGeneratingShare(false);
     }
-  }, [photo.url, message, signatureDataUrl, photoAspectRatio, isTallCard]);
+  }, [photo.url, message, signatureDataUrl, photoAspectRatio]);
 
   return (
     <motion.div
