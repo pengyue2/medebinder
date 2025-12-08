@@ -196,23 +196,18 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
       
       // Get actual card dimensions from the DOM
       const cardElement = cardRef.current;
-      const actualWidth = cardElement?.offsetWidth || 300;
-      const actualHeight = cardElement?.offsetHeight || 400;
-      const isCardLandscape = actualWidth >= actualHeight;
-      
-      // Scale up for better quality while maintaining aspect ratio
+      const cardWidth = (cardElement?.offsetWidth || 300) * 2; // Scale for quality
+      const cardHeight = (cardElement?.offsetHeight || 400) * 2;
       const scaleFactor = 2;
-      const cardWidth = actualWidth * scaleFactor;
-      const cardHeight = actualHeight * scaleFactor;
       
-      // Create a temporary container for the collage
+      // Always side-by-side: Photo LEFT, Postcard Back RIGHT
       const collageContainer = document.createElement("div");
       collageContainer.style.cssText = `
         position: fixed;
         left: -9999px;
         top: 0;
         display: flex;
-        flex-direction: ${isCardLandscape ? 'row' : 'column'};
+        flex-direction: row;
         gap: ${16 * scaleFactor}px;
         padding: ${24 * scaleFactor}px;
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -220,7 +215,7 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
       `;
       document.body.appendChild(collageContainer);
 
-      // Create front card (photo)
+      // Create front card (photo) with blurred background wings
       const frontCard = document.createElement("div");
       frontCard.style.cssText = `
         width: ${cardWidth}px;
@@ -228,16 +223,46 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         border-radius: ${12 * scaleFactor}px;
         overflow: hidden;
         box-shadow: 0 ${10 * scaleFactor}px ${30 * scaleFactor}px rgba(0,0,0,0.3);
-        background: #f5f5f5;
+        position: relative;
+      `;
+      
+      // Blurred background (wings effect)
+      const blurredBg = document.createElement("div");
+      blurredBg.style.cssText = `
+        position: absolute;
+        inset: 0;
+        background-image: url(${photo.url});
+        background-size: cover;
+        background-position: center;
+        filter: blur(30px) brightness(0.6);
+        transform: scale(1.3);
+      `;
+      frontCard.appendChild(blurredBg);
+      
+      // Centered photo container with object-fit: contain
+      const photoContainer = document.createElement("div");
+      photoContainer.style.cssText = `
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: ${12 * scaleFactor}px;
       `;
       const photoImg = document.createElement("img");
       photoImg.src = photo.url;
-      photoImg.style.cssText = `width: 100%; height: 100%; object-fit: cover;`;
+      photoImg.style.cssText = `
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: ${8 * scaleFactor}px;
+      `;
       photoImg.crossOrigin = "anonymous";
-      frontCard.appendChild(photoImg);
+      photoContainer.appendChild(photoImg);
+      frontCard.appendChild(photoContainer);
       collageContainer.appendChild(frontCard);
 
-      // Create back card (postcard) with CSS Grid
+      // Create back card (postcard) with 2x2 grid layout
       const backCard = document.createElement("div");
       backCard.style.cssText = `
         width: ${cardWidth}px;
@@ -250,12 +275,12 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         position: relative;
         box-sizing: border-box;
         display: grid;
-        grid-template-columns: ${isCardLandscape ? '1fr 1fr' : '1fr'};
-        grid-template-rows: ${isCardLandscape ? '1fr' : '1fr 1fr'};
-        gap: ${12 * scaleFactor}px;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr 1fr;
+        gap: ${8 * scaleFactor}px;
       `;
 
-      // Postage stamp
+      // Postage stamp - top right
       const stamp = document.createElement("div");
       stamp.style.cssText = `
         position: absolute;
@@ -270,6 +295,7 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        z-index: 10;
       `;
       stamp.innerHTML = `
         <div style="width: ${30 * scaleFactor}px; height: ${30 * scaleFactor}px; background: rgba(100,100,100,0.2); border-radius: ${4 * scaleFactor}px; margin-bottom: ${4 * scaleFactor}px;"></div>
@@ -277,53 +303,64 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
       `;
       backCard.appendChild(stamp);
 
-      // Left/Top column - Message area
+      // Top-left quadrant - Message area (spans both top cells)
       const messageArea = document.createElement("div");
       messageArea.style.cssText = `
+        grid-column: 1 / 3;
+        grid-row: 1;
         font-family: 'Courier New', Courier, monospace;
         font-size: ${12 * scaleFactor}px;
         color: #2c2c2c;
-        line-height: 1.5;
+        line-height: 1.6;
         white-space: pre-wrap;
         word-break: break-word;
-        padding-top: ${isCardLandscape ? 0 : 60 * scaleFactor}px;
+        padding: ${8 * scaleFactor}px;
+        padding-right: ${70 * scaleFactor}px;
         display: flex;
         align-items: flex-start;
       `;
       messageArea.textContent = message || "Wish you were here!";
       backCard.appendChild(messageArea);
 
-      // Right/Bottom column - Signature area (vertically centered)
-      const signatureArea = document.createElement("div");
-      signatureArea.style.cssText = `
+      // Bottom-left quadrant - Address lines
+      const addressArea = document.createElement("div");
+      addressArea.style.cssText = `
+        grid-column: 1;
+        grid-row: 2;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        align-items: stretch;
-        padding-right: ${isCardLandscape ? 70 * scaleFactor : 0}px;
+        padding: ${8 * scaleFactor}px;
+      `;
+      addressArea.innerHTML = `
+        <div style="height: 1px; background: rgba(100,100,100,0.25); margin-bottom: ${14 * scaleFactor}px;"></div>
+        <div style="height: 1px; background: rgba(100,100,100,0.25); margin-bottom: ${14 * scaleFactor}px;"></div>
+        <div style="height: 1px; background: rgba(100,100,100,0.25); width: 80%;"></div>
+      `;
+      backCard.appendChild(addressArea);
+
+      // Bottom-right quadrant - Signature area (50% width, 50% height)
+      const signatureArea = document.createElement("div");
+      signatureArea.style.cssText = `
+        grid-column: 2;
+        grid-row: 2;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: ${8 * scaleFactor}px;
       `;
 
-      // Address lines
-      const addressLines = document.createElement("div");
-      addressLines.style.cssText = `margin-bottom: ${16 * scaleFactor}px;`;
-      addressLines.innerHTML = `
-        <div style="height: 1px; background: rgba(100,100,100,0.25); margin-bottom: ${12 * scaleFactor}px;"></div>
-        <div style="height: 1px; background: rgba(100,100,100,0.25); margin-bottom: ${12 * scaleFactor}px;"></div>
-        <div style="height: 1px; background: rgba(100,100,100,0.25); width: 66%;"></div>
-      `;
-      signatureArea.appendChild(addressLines);
-
-      // Signature
       if (signatureDataUrl) {
         const sigImg = document.createElement("img");
         sigImg.src = signatureDataUrl;
-        sigImg.style.cssText = `width: 100%; height: ${72 * scaleFactor}px; object-fit: contain;`;
+        sigImg.style.cssText = `width: 100%; height: 100%; object-fit: contain;`;
         signatureArea.appendChild(sigImg);
       } else {
         const sigPlaceholder = document.createElement("div");
         sigPlaceholder.style.cssText = `
           width: 100%;
-          height: ${72 * scaleFactor}px;
+          height: 100%;
           border: ${2 * scaleFactor}px dashed rgba(100,100,100,0.4);
           border-radius: ${8 * scaleFactor}px;
           display: flex;
