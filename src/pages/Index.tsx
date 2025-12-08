@@ -18,7 +18,7 @@ const Index = () => {
   const completedGoalRef = useRef(0);
   
   const { unsortedPhotos, addPhotos, removePhotos, count: unsortedCount } = useUnsortedPhotos();
-  const { filteredBinders, searchQuery, setSearchQuery, createBinder, totalCount, binders, addPhotoToBinder } = useBinders();
+  const { filteredBinders, searchQuery, setSearchQuery, createBinder, deleteBinder, renameBinder, totalCount, binders, addPhotoToBinder } = useBinders();
   const { toast } = useToast();
 
   const handleOrganizedCountChange = useCallback((count: number) => {
@@ -55,6 +55,22 @@ const Index = () => {
       description: `"${newBinder.title}" is ready for photos`,
     });
   }, [createBinder, toast]);
+
+  const handleRenameBinder = useCallback((id: string, newName: string) => {
+    renameBinder(id, newName);
+    toast({
+      title: "Binder renamed",
+      description: `Renamed to "${newName}"`,
+    });
+  }, [renameBinder, toast]);
+
+  const handleDeleteBinder = useCallback((id: string) => {
+    deleteBinder(id);
+    toast({
+      title: "Binder deleted",
+      description: "The binder has been removed",
+    });
+  }, [deleteBinder, toast]);
 
   const handleSearchToggle = useCallback(() => {
     setIsSearchOpen((prev) => !prev);
@@ -143,7 +159,11 @@ const Index = () => {
                   animationFillMode: "backwards",
                 }}
               >
-                <BinderCard binder={binder} />
+                <BinderCard 
+                  binder={binder} 
+                  onRename={handleRenameBinder}
+                  onDelete={handleDeleteBinder}
+                />
               </div>
             ))}
           </div>

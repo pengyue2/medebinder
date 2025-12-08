@@ -15,6 +15,8 @@ interface PhotoDetailViewProps {
 
 const MAX_MESSAGE_LENGTH = 150;
 
+const STAMP_OPTIONS = ["🌎", "✈️", "💌", "🏛️", "🏔️", "🌅", "🎭", "🌸"];
+
 const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
@@ -25,6 +27,8 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [photoAspectRatio, setPhotoAspectRatio] = useState(1); // width/height
+  const [selectedStamp, setSelectedStamp] = useState<string | null>(null);
+  const [showStampPicker, setShowStampPicker] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [imageRect, setImageRect] = useState<DOMRect | null>(null);
@@ -577,11 +581,58 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
               }}
             />
             
-            {/* Postage Stamp placeholder - top right (both orientations) */}
-            <div className="absolute top-4 right-4 w-12 h-16 bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded flex flex-col items-center justify-center">
-              <div className="w-8 h-8 bg-muted-foreground/20 rounded mb-1" />
-              <span className="text-[6px] text-muted-foreground/60 font-medium uppercase tracking-wide">Postage</span>
-            </div>
+            {/* Postage Stamp - clickable to change */}
+            <button 
+              onClick={() => setShowStampPicker(true)}
+              className="absolute top-4 right-4 w-12 h-16 bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded flex flex-col items-center justify-center hover:border-primary/50 hover:bg-primary/10 transition-colors cursor-pointer"
+            >
+              {selectedStamp ? (
+                <span className="text-3xl">{selectedStamp}</span>
+              ) : (
+                <>
+                  <div className="w-8 h-8 bg-muted-foreground/20 rounded mb-1" />
+                  <span className="text-[6px] text-muted-foreground/60 font-medium uppercase tracking-wide">Postage</span>
+                </>
+              )}
+            </button>
+
+            {/* Stamp Picker Modal */}
+            <AnimatePresence>
+              {showStampPicker && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="absolute top-4 right-4 z-50 bg-card border border-border rounded-xl p-3 shadow-lg"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-xs text-muted-foreground mb-2 text-center">Choose a stamp</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {STAMP_OPTIONS.map((stamp) => (
+                      <button
+                        key={stamp}
+                        onClick={() => {
+                          setSelectedStamp(stamp);
+                          setShowStampPicker(false);
+                        }}
+                        className={cn(
+                          "w-10 h-10 rounded-lg flex items-center justify-center text-2xl hover:bg-muted transition-colors",
+                          selectedStamp === stamp && "bg-primary/20 ring-2 ring-primary"
+                        )}
+                      >
+                        {stamp}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setShowStampPicker(false)}
+                    className="w-full mt-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             {/* Flexbox layout that adapts to card shape */}
             <div className={cn(

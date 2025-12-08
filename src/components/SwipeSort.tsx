@@ -2,13 +2,13 @@ import { useState, useCallback } from "react";
 import { motion, useMotionValue, useTransform, AnimatePresence, PanInfo } from "framer-motion";
 import type { Photo } from "@/types/binder";
 import type { Binder } from "@/types/binder";
-import { Heart, Archive, FolderPlus, ArrowLeft, CheckCircle, Stamp } from "lucide-react";
+import { Heart, Archive, FolderPlus, ArrowLeft, CheckCircle, Stamp, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import BinderPickerModal from "./BinderPickerModal";
 import PhotoDetailView from "./PhotoDetailView";
 import { useToast } from "@/hooks/use-toast";
-
+import SwipeLightbox from "./SwipeLightbox";
 interface SwipeSortProps {
   photos: Photo[];
   binders: Binder[];
@@ -32,8 +32,8 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
   const [showSummary, setShowSummary] = useState(false);
   const [showPhotoPicker, setShowPhotoPicker] = useState(false);
   const [postcardPhoto, setPostcardPhoto] = useState<Photo | null>(null);
+  const [showLightbox, setShowLightbox] = useState(false);
   const { toast } = useToast();
-
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -343,6 +343,16 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
                     draggable={false}
                   />
 
+                  {/* Magnifying glass button for zoom */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowLightbox(true);
+                    }}
+                    className="absolute top-3 right-3 w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background/90 transition-colors z-30"
+                  >
+                    <Search className="w-5 h-5 text-foreground" />
+                  </button>
                   {/* Swipe indicators */}
                   <motion.div
                     className="absolute inset-0 bg-destructive/30 flex items-center justify-center"
@@ -428,6 +438,16 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
           <PhotoDetailView
             photo={postcardPhoto}
             onClose={handleClosePostcard}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Lightbox for zoom preview */}
+      <AnimatePresence>
+        {showLightbox && currentPhoto && (
+          <SwipeLightbox
+            photo={currentPhoto}
+            onClose={() => setShowLightbox(false)}
           />
         )}
       </AnimatePresence>
