@@ -1,7 +1,8 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import Header from "@/components/Header";
 import BinderCard from "@/components/BinderCard";
 import DailyStackWidget from "@/components/DailyStackWidget";
+import DayCompleteWidget from "@/components/DayCompleteWidget";
 import SwipeSort from "@/components/SwipeSort";
 import CreateBinderModal from "@/components/CreateBinderModal";
 import { useUnsortedPhotos } from "@/hooks/useUnsortedPhotos";
@@ -13,6 +14,8 @@ const Index = () => {
   const [organizedCount, setOrganizedCount] = useState(0);
   const [showCreateBinder, setShowCreateBinder] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isDayComplete, setIsDayComplete] = useState(false);
+  const completedGoalRef = useRef(0);
   
   const { unsortedPhotos, addPhotos, removePhotos, count: unsortedCount } = useUnsortedPhotos();
   const { filteredBinders, searchQuery, setSearchQuery, createBinder, totalCount, binders, addPhotoToBinder } = useBinders();
@@ -22,13 +25,28 @@ const Index = () => {
     setOrganizedCount(count);
   }, []);
 
-  const handleSwipeSortClose = useCallback((organizedPhotoIds?: string[]) => {
+  const handleSwipeSortClose = useCallback((organizedPhotoIds?: string[], goalWasCompleted?: boolean) => {
     setShowSwipeSort(false);
     if (organizedPhotoIds && organizedPhotoIds.length > 0) {
       removePhotos(organizedPhotoIds);
+      
+      // If the daily goal was completed, mark day as complete
+      if (goalWasCompleted) {
+        completedGoalRef.current = organizedPhotoIds.length;
+        setIsDayComplete(true);
+      }
     }
     setOrganizedCount(0);
   }, [removePhotos]);
+
+  const handleRefillStack = useCallback(() => {
+    setIsDayComplete(false);
+    completedGoalRef.current = 0;
+    toast({
+      title: "Stack refilled",
+      description: "You can continue organizing photos",
+    });
+  }, [toast]);
 
   const handleCreateBinder = useCallback((name: string) => {
     const newBinder = createBinder(name);
@@ -67,8 +85,18 @@ const Index = () => {
       />
       
       <main className="px-4 py-6 max-w-lg mx-auto safe-area-bottom">
-        {/* Daily Stack Widget - only show if there are unsorted photos */}
-        {unsortedCount > 0 && (
+        {/* Day Complete Widget - show when daily goal is done */}
+        {isDayComplete && (
+          <div className="mb-6">
+            <DayCompleteWidget 
+              completedCount={completedGoalRef.current}
+              onRefill={handleRefillStack}
+            />
+          </div>
+        )}
+
+        {/* Daily Stack Widget - only show if there are unsorted photos and day is not complete */}
+        {!isDayComplete && unsortedCount > 0 && (
           <div className="mb-6">
             <DailyStackWidget 
               photoCount={unsortedCount} 
@@ -81,7 +109,7 @@ const Index = () => {
         )}
 
         {/* Empty state for no photos */}
-        {unsortedCount === 0 && (
+        {!isDayComplete && unsortedCount === 0 && (
           <div className="mb-6 p-6 rounded-2xl border-2 border-dashed border-muted-foreground/30 text-center">
             <p className="text-muted-foreground mb-2">No photos to organize</p>
             <p className="text-sm text-muted-foreground">

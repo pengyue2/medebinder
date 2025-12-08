@@ -13,7 +13,7 @@ interface SwipeSortProps {
   photos: Photo[];
   binders: Binder[];
   dailyGoal: number;
-  onClose: (organizedPhotoIds?: string[]) => void;
+  onClose: (organizedPhotoIds?: string[], goalWasCompleted?: boolean) => void;
   onOrganizedCountChange?: (count: number) => void;
   onAddPhotoToBinder?: (binderId: string, photo: Photo) => void;
   onCreateBinder?: (name: string) => Binder;
@@ -168,7 +168,7 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
           variant="ghost"
           size="icon"
           className="rounded-full glass"
-          onClick={() => onClose(organizedPhotos.map(p => p.id))}
+          onClick={() => onClose(organizedPhotos.map(p => p.id), false)}
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
@@ -282,7 +282,7 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6 }}
-                    onClick={() => onClose(organizedPhotos.map(p => p.id))}
+                    onClick={() => onClose(organizedPhotos.map(p => p.id), true)}
                     className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
                     Back to Home
