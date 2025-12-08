@@ -24,16 +24,18 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
   const [isSignaturePrinting, setIsSignaturePrinting] = useState(false);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const [isLandscape, setIsLandscape] = useState(true);
-  const [isZoomed, setIsZoomed] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+  const [imageRect, setImageRect] = useState<DOMRect | null>(null);
 
-  // Pinch-to-zoom state
-  const scale = useMotionValue(1);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const springScale = useSpring(scale, { stiffness: 300, damping: 30 });
-  const springX = useSpring(x, { stiffness: 300, damping: 30 });
-  const springY = useSpring(y, { stiffness: 300, damping: 30 });
+  // Lightbox zoom state
+  const lightboxScale = useMotionValue(1);
+  const lightboxX = useMotionValue(0);
+  const lightboxY = useMotionValue(0);
+  const springLightboxScale = useSpring(lightboxScale, { stiffness: 300, damping: 30 });
+  const springLightboxX = useSpring(lightboxX, { stiffness: 300, damping: 30 });
+  const springLightboxY = useSpring(lightboxY, { stiffness: 300, damping: 30 });
 
   // Detect image orientation
   useEffect(() => {
@@ -123,54 +125,59 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
     }, 100);
   };
 
-  // Pinch-to-zoom handlers
-  const handleDoubleTap = useCallback(() => {
+  // Lightbox handlers
+  const openLightbox = useCallback(() => {
     if (isFlipped) return;
     
-    if (isZoomed) {
+    // Capture the current image position for animation
+    if (imageRef.current) {
+      setImageRect(imageRef.current.getBoundingClientRect());
+    }
+    
+    // Reset lightbox state
+    lightboxScale.set(1);
+    lightboxX.set(0);
+    lightboxY.set(0);
+    setIsLightboxOpen(true);
+  }, [isFlipped, lightboxScale, lightboxX, lightboxY]);
+
+  const closeLightbox = useCallback(() => {
+    // Animate back to original scale/position before closing
+    lightboxScale.set(1);
+    lightboxX.set(0);
+    lightboxY.set(0);
+    
+    // Small delay to allow animation before closing
+    setTimeout(() => {
+      setIsLightboxOpen(false);
+    }, 200);
+  }, [lightboxScale, lightboxX, lightboxY]);
+
+  const handleLightboxDoubleTap = useCallback(() => {
+    const currentScale = lightboxScale.get();
+    if (currentScale > 1.2) {
       // Reset zoom
-      scale.set(1);
-      x.set(0);
-      y.set(0);
-      setIsZoomed(false);
+      lightboxScale.set(1);
+      lightboxX.set(0);
+      lightboxY.set(0);
     } else {
       // Zoom in
-      scale.set(2.5);
-      setIsZoomed(true);
+      lightboxScale.set(2.5);
     }
-  }, [isFlipped, isZoomed, scale, x, y]);
+  }, [lightboxScale, lightboxX, lightboxY]);
 
-  const handlePinchEnd = useCallback(() => {
-    const currentScale = scale.get();
-    if (currentScale < 1.2) {
-      scale.set(1);
-      x.set(0);
-      y.set(0);
-      setIsZoomed(false);
-    } else {
-      setIsZoomed(true);
-    }
-  }, [scale, x, y]);
-
-  const handlePan = useCallback((event: any, info: { delta: { x: number; y: number } }) => {
-    if (!isZoomed) return;
+  const handleLightboxPan = useCallback((event: any, info: { delta: { x: number; y: number } }) => {
+    const currentScale = lightboxScale.get();
+    if (currentScale <= 1) return;
     
-    const currentScale = scale.get();
-    const maxOffset = (currentScale - 1) * 150;
+    const maxOffset = (currentScale - 1) * 200;
     
-    const newX = Math.max(-maxOffset, Math.min(maxOffset, x.get() + info.delta.x));
-    const newY = Math.max(-maxOffset, Math.min(maxOffset, y.get() + info.delta.y));
+    const newX = Math.max(-maxOffset, Math.min(maxOffset, lightboxX.get() + info.delta.x));
+    const newY = Math.max(-maxOffset, Math.min(maxOffset, lightboxY.get() + info.delta.y));
     
-    x.set(newX);
-    y.set(newY);
-  }, [isZoomed, scale, x, y]);
-
-  const resetZoom = useCallback(() => {
-    scale.set(1);
-    x.set(0);
-    y.set(0);
-    setIsZoomed(false);
-  }, [scale, x, y]);
+    lightboxX.set(newX);
+    lightboxY.set(newY);
+  }, [lightboxScale, lightboxX, lightboxY]);
 
   const handleShare = useCallback(async () => {
     setIsGeneratingShare(true);
@@ -466,43 +473,29 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
               }}
             />
             
-            {/* Photo container - fit, don't crop, with pinch-to-zoom */}
-            <motion.div 
-              className="absolute inset-0 flex items-center justify-center p-4 touch-none"
-              onDoubleClick={handleDoubleTap}
-              onPan={handlePan}
-              onPanEnd={handlePinchEnd}
-              style={{
-                cursor: isZoomed ? "grab" : "zoom-in",
-              }}
+            {/* Photo container - tap to open lightbox */}
+            <div 
+              className="absolute inset-0 flex items-center justify-center p-4 cursor-zoom-in"
+              onDoubleClick={openLightbox}
             >
-              <motion.img
+              <img
+                ref={imageRef}
                 src={photo.url}
                 alt={photo.alt}
                 className="max-w-full max-h-full object-contain rounded-lg"
                 draggable={false}
-                style={{
-                  scale: springScale,
-                  x: springX,
-                  y: springY,
-                }}
               />
-            </motion.div>
+            </div>
 
-            {/* Zoom reset hint */}
-            {isZoomed && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="absolute bottom-4 left-1/2 -translate-x-1/2 glass rounded-full px-3 py-1.5 pointer-events-auto"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  resetZoom();
-                }}
-              >
-                <span className="text-xs text-foreground">Double-tap to reset</span>
-              </motion.div>
-            )}
+            {/* Zoom hint */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 glass rounded-full px-3 py-1.5 pointer-events-none"
+            >
+              <span className="text-xs text-foreground/70">Double-tap to zoom</span>
+            </motion.div>
             
             {/* Photo frame border */}
             <div className="absolute inset-0 border-[6px] border-card/30 rounded-2xl pointer-events-none" />
@@ -818,6 +811,72 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         onClose={() => setIsSignatureModalOpen(false)}
         onConfirm={handleSignatureConfirm}
       />
+
+      {/* Full-screen Lightbox Overlay */}
+      <AnimatePresence>
+        {isLightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center touch-none"
+            style={{ backgroundColor: "rgba(0, 0, 0, 0.95)" }}
+            onClick={closeLightbox}
+          >
+            {/* Close button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-4 right-4 z-[10000] rounded-full bg-white/10 hover:bg-white/20 text-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                closeLightbox();
+              }}
+            >
+              <X className="w-5 h-5" />
+            </Button>
+
+            {/* Zoomable image container */}
+            <motion.div
+              className="w-full h-full flex items-center justify-center p-4"
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={handleLightboxDoubleTap}
+              onPan={handleLightboxPan}
+              style={{ cursor: lightboxScale.get() > 1 ? "grab" : "zoom-in" }}
+            >
+              <motion.img
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                src={photo.url}
+                alt={photo.alt}
+                className="max-w-full max-h-full object-contain select-none"
+                draggable={false}
+                style={{
+                  scale: springLightboxScale,
+                  x: springLightboxX,
+                  y: springLightboxY,
+                }}
+              />
+            </motion.div>
+
+            {/* Zoom controls hint */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ delay: 0.3 }}
+              className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2"
+            >
+              <span className="text-sm text-white/80">
+                Double-tap to zoom • Drag to pan • Tap outside to close
+              </span>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
