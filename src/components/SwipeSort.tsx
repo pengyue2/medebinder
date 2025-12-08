@@ -14,13 +14,15 @@ interface SwipeSortProps {
   binders: Binder[];
   onClose: (organizedPhotoIds?: string[]) => void;
   onOrganizedCountChange?: (count: number) => void;
+  onAddPhotoToBinder?: (binderId: string, photo: Photo) => void;
+  onCreateBinder?: (name: string) => Binder;
 }
 
 const SWIPE_THRESHOLD = 100;
 const ROTATION_RANGE = 15;
 const CELEBRATION_THRESHOLD = 10;
 
-const SwipeSort = ({ photos, binders, onClose, onOrganizedCountChange }: SwipeSortProps) => {
+const SwipeSort = ({ photos, binders, onClose, onOrganizedCountChange, onAddPhotoToBinder, onCreateBinder }: SwipeSortProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [exitDirection, setExitDirection] = useState<"left" | "right" | "up" | null>(null);
   const [showBinderPicker, setShowBinderPicker] = useState(false);
@@ -128,6 +130,7 @@ const SwipeSort = ({ photos, binders, onClose, onOrganizedCountChange }: SwipeSo
     setExitDirection("right");
     if (pendingPhoto) {
       trackOrganizedPhoto(pendingPhoto);
+      onAddPhotoToBinder?.(binderId, pendingPhoto);
     }
     toast({
       title: `Added to ${binder?.title || "Binder"}`,
@@ -138,7 +141,7 @@ const SwipeSort = ({ photos, binders, onClose, onOrganizedCountChange }: SwipeSo
       setExitDirection(null);
       setPendingPhoto(null);
     }, 300);
-  }, [binders, toast, pendingPhoto, trackOrganizedPhoto]);
+  }, [binders, toast, pendingPhoto, trackOrganizedPhoto, onAddPhotoToBinder]);
 
   const handleBinderPickerClose = useCallback(() => {
     setShowBinderPicker(false);
@@ -413,6 +416,7 @@ const SwipeSort = ({ photos, binders, onClose, onOrganizedCountChange }: SwipeSo
             binders={binders}
             onSelect={handleBinderSelect}
             onClose={handleBinderPickerClose}
+            onCreateBinder={onCreateBinder}
           />
         )}
       </AnimatePresence>

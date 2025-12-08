@@ -12,11 +12,17 @@ const BinderCard = ({ binder }: BinderCardProps) => {
       <article className="binder-card group cursor-pointer">
         {/* Cover Image */}
         <div className="aspect-[4/5] relative">
-          <img
-            src={binder.coverImage}
-            alt={`${binder.title} cover`}
-            className="w-full h-full object-cover"
-          />
+          {binder.coverImage ? (
+            <img
+              src={binder.coverImage}
+              alt={`${binder.title} cover`}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full bg-muted flex items-center justify-center">
+              <ImageIcon className="w-12 h-12 text-muted-foreground/50" />
+            </div>
+          )}
           
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/20 to-transparent" />

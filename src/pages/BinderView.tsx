@@ -1,21 +1,22 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MoreVertical, Play, X, Trash2, FolderInput } from "lucide-react";
+import { ArrowLeft, MoreVertical, Play, X, Trash2, FolderInput, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PhotoGrid from "@/components/PhotoGrid";
 import ExhibitionMode from "@/components/ExhibitionMode";
-import { mockBinders } from "@/data/mockBinders";
+import { useBinders } from "@/context/BindersContext";
 import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 const BinderView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { getBinderById } = useBinders();
   
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [showExhibition, setShowExhibition] = useState(false);
   
-  const binder = mockBinders.find((b) => b.id === id);
+  const binder = getBinderById(id || "");
 
   const handleToggleSelection = useCallback((photoId: string) => {
     setSelectedPhotos(prev => {
@@ -60,11 +61,17 @@ const BinderView = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Header with Cover Image */}
       <div className="relative h-56">
-        <img
-          src={binder.coverImage}
-          alt={binder.title}
-          className="w-full h-full object-cover"
-        />
+        {binder.coverImage ? (
+          <img
+            src={binder.coverImage}
+            alt={binder.title}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-muted flex items-center justify-center">
+            <ImageIcon className="w-16 h-16 text-muted-foreground/50" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
         
         {/* Navigation */}
