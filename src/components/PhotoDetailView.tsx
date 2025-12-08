@@ -24,7 +24,16 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
   const [isSignaturePrinting, setIsSignaturePrinting] = useState(false);
   const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const [isLandscape, setIsLandscape] = useState(true);
+  const [isZoomed, setIsZoomed] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Pinch-to-zoom state
+  const scale = useMotionValue(1);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springScale = useSpring(scale, { stiffness: 300, damping: 30 });
+  const springX = useSpring(x, { stiffness: 300, damping: 30 });
+  const springY = useSpring(y, { stiffness: 300, damping: 30 });
 
   // Detect image orientation
   useEffect(() => {
@@ -113,6 +122,55 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
       }, 800);
     }, 100);
   };
+
+  // Pinch-to-zoom handlers
+  const handleDoubleTap = useCallback(() => {
+    if (isFlipped) return;
+    
+    if (isZoomed) {
+      // Reset zoom
+      scale.set(1);
+      x.set(0);
+      y.set(0);
+      setIsZoomed(false);
+    } else {
+      // Zoom in
+      scale.set(2.5);
+      setIsZoomed(true);
+    }
+  }, [isFlipped, isZoomed, scale, x, y]);
+
+  const handlePinchEnd = useCallback(() => {
+    const currentScale = scale.get();
+    if (currentScale < 1.2) {
+      scale.set(1);
+      x.set(0);
+      y.set(0);
+      setIsZoomed(false);
+    } else {
+      setIsZoomed(true);
+    }
+  }, [scale, x, y]);
+
+  const handlePan = useCallback((event: any, info: { delta: { x: number; y: number } }) => {
+    if (!isZoomed) return;
+    
+    const currentScale = scale.get();
+    const maxOffset = (currentScale - 1) * 150;
+    
+    const newX = Math.max(-maxOffset, Math.min(maxOffset, x.get() + info.delta.x));
+    const newY = Math.max(-maxOffset, Math.min(maxOffset, y.get() + info.delta.y));
+    
+    x.set(newX);
+    y.set(newY);
+  }, [isZoomed, scale, x, y]);
+
+  const resetZoom = useCallback(() => {
+    scale.set(1);
+    x.set(0);
+    y.set(0);
+    setIsZoomed(false);
+  }, [scale, x, y]);
 
   const handleShare = useCallback(async () => {
     setIsGeneratingShare(true);
@@ -408,15 +466,43 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
               }}
             />
             
-            {/* Photo container - fit, don't crop */}
-            <div className="absolute inset-0 flex items-center justify-center p-4">
-              <img
+            {/* Photo container - fit, don't crop, with pinch-to-zoom */}
+            <motion.div 
+              className="absolute inset-0 flex items-center justify-center p-4 touch-none"
+              onDoubleClick={handleDoubleTap}
+              onPan={handlePan}
+              onPanEnd={handlePinchEnd}
+              style={{
+                cursor: isZoomed ? "grab" : "zoom-in",
+              }}
+            >
+              <motion.img
                 src={photo.url}
                 alt={photo.alt}
                 className="max-w-full max-h-full object-contain rounded-lg"
                 draggable={false}
+                style={{
+                  scale: springScale,
+                  x: springX,
+                  y: springY,
+                }}
               />
-            </div>
+            </motion.div>
+
+            {/* Zoom reset hint */}
+            {isZoomed && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 glass rounded-full px-3 py-1.5 pointer-events-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  resetZoom();
+                }}
+              >
+                <span className="text-xs text-foreground">Double-tap to reset</span>
+              </motion.div>
+            )}
             
             {/* Photo frame border */}
             <div className="absolute inset-0 border-[6px] border-card/30 rounded-2xl pointer-events-none" />
