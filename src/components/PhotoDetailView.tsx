@@ -186,6 +186,17 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
       // Dynamically import html2canvas to reduce initial bundle
       const html2canvas = (await import("html2canvas")).default;
       
+      // Get actual card dimensions from the DOM
+      const cardElement = cardRef.current;
+      const actualWidth = cardElement?.offsetWidth || 300;
+      const actualHeight = cardElement?.offsetHeight || 400;
+      const isCardLandscape = actualWidth >= actualHeight;
+      
+      // Scale up for better quality while maintaining aspect ratio
+      const scaleFactor = 2;
+      const cardWidth = actualWidth * scaleFactor;
+      const cardHeight = actualHeight * scaleFactor;
+      
       // Create a temporary container for the collage
       const collageContainer = document.createElement("div");
       collageContainer.style.cssText = `
@@ -193,26 +204,22 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         left: -9999px;
         top: 0;
         display: flex;
-        flex-direction: row;
-        gap: 16px;
-        padding: 24px;
+        flex-direction: ${isCardLandscape ? 'row' : 'column'};
+        gap: ${16 * scaleFactor}px;
+        padding: ${24 * scaleFactor}px;
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        border-radius: 16px;
+        border-radius: ${16 * scaleFactor}px;
       `;
       document.body.appendChild(collageContainer);
-
-      // Card dimensions
-      const cardWidth = 300;
-      const cardHeight = 400;
 
       // Create front card (photo)
       const frontCard = document.createElement("div");
       frontCard.style.cssText = `
         width: ${cardWidth}px;
         height: ${cardHeight}px;
-        border-radius: 12px;
+        border-radius: ${12 * scaleFactor}px;
         overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        box-shadow: 0 ${10 * scaleFactor}px ${30 * scaleFactor}px rgba(0,0,0,0.3);
         background: #f5f5f5;
       `;
       const photoImg = document.createElement("img");
@@ -222,116 +229,107 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
       frontCard.appendChild(photoImg);
       collageContainer.appendChild(frontCard);
 
-      // Create back card (postcard)
+      // Create back card (postcard) with CSS Grid
       const backCard = document.createElement("div");
       backCard.style.cssText = `
         width: ${cardWidth}px;
         height: ${cardHeight}px;
-        border-radius: 12px;
+        border-radius: ${12 * scaleFactor}px;
         overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        box-shadow: 0 ${10 * scaleFactor}px ${30 * scaleFactor}px rgba(0,0,0,0.3);
         background: linear-gradient(135deg, #f5f0e6 0%, #ebe5d9 50%, #f0ebe0 100%);
-        padding: 16px;
+        padding: ${16 * scaleFactor}px;
         position: relative;
         box-sizing: border-box;
+        display: grid;
+        grid-template-columns: ${isCardLandscape ? '1fr 1fr' : '1fr'};
+        grid-template-rows: ${isCardLandscape ? '1fr' : '1fr 1fr'};
+        gap: ${12 * scaleFactor}px;
       `;
 
       // Postage stamp
       const stamp = document.createElement("div");
       stamp.style.cssText = `
         position: absolute;
-        top: 12px;
-        right: 12px;
-        width: 48px;
-        height: 60px;
+        top: ${12 * scaleFactor}px;
+        right: ${12 * scaleFactor}px;
+        width: ${48 * scaleFactor}px;
+        height: ${60 * scaleFactor}px;
         background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.2));
-        border: 2px dashed rgba(100,100,100,0.4);
-        border-radius: 4px;
+        border: ${2 * scaleFactor}px dashed rgba(100,100,100,0.4);
+        border-radius: ${4 * scaleFactor}px;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
       `;
       stamp.innerHTML = `
-        <div style="width: 30px; height: 30px; background: rgba(100,100,100,0.2); border-radius: 4px; margin-bottom: 4px;"></div>
-        <span style="font-size: 6px; color: rgba(100,100,100,0.6); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Postage</span>
+        <div style="width: ${30 * scaleFactor}px; height: ${30 * scaleFactor}px; background: rgba(100,100,100,0.2); border-radius: ${4 * scaleFactor}px; margin-bottom: ${4 * scaleFactor}px;"></div>
+        <span style="font-size: ${6 * scaleFactor}px; color: rgba(100,100,100,0.6); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">Postage</span>
       `;
       backCard.appendChild(stamp);
 
-      // Content area
-      const contentArea = document.createElement("div");
-      contentArea.style.cssText = `
-        display: flex;
-        height: calc(100% - 20px);
-        margin-top: 20px;
-      `;
-
-      // Left side - message
-      const leftSide = document.createElement("div");
-      leftSide.style.cssText = `
-        flex: 1;
-        padding-right: 12px;
+      // Left/Top column - Message area
+      const messageArea = document.createElement("div");
+      messageArea.style.cssText = `
         font-family: 'Courier New', Courier, monospace;
-        font-size: 12px;
+        font-size: ${12 * scaleFactor}px;
         color: #2c2c2c;
         line-height: 1.5;
         white-space: pre-wrap;
         word-break: break-word;
+        padding-top: ${isCardLandscape ? 0 : 60 * scaleFactor}px;
+        display: flex;
+        align-items: flex-start;
       `;
-      leftSide.textContent = message || "Wish you were here!";
-      contentArea.appendChild(leftSide);
+      messageArea.textContent = message || "Wish you were here!";
+      backCard.appendChild(messageArea);
 
-      // Divider
-      const divider = document.createElement("div");
-      divider.style.cssText = `width: 1px; background: rgba(100,100,100,0.3); margin: 0 8px;`;
-      contentArea.appendChild(divider);
-
-      // Right side - signature area
-      const rightSide = document.createElement("div");
-      rightSide.style.cssText = `
-        flex: 1;
-        padding-left: 12px;
+      // Right/Bottom column - Signature area (vertically centered)
+      const signatureArea = document.createElement("div");
+      signatureArea.style.cssText = `
         display: flex;
         flex-direction: column;
-        justify-content: flex-end;
+        justify-content: center;
+        align-items: stretch;
+        padding-right: ${isCardLandscape ? 70 * scaleFactor : 0}px;
       `;
 
       // Address lines
       const addressLines = document.createElement("div");
-      addressLines.style.cssText = `margin-bottom: 16px;`;
+      addressLines.style.cssText = `margin-bottom: ${16 * scaleFactor}px;`;
       addressLines.innerHTML = `
-        <div style="height: 1px; background: rgba(100,100,100,0.25); margin-bottom: 12px;"></div>
-        <div style="height: 1px; background: rgba(100,100,100,0.25); margin-bottom: 12px;"></div>
+        <div style="height: 1px; background: rgba(100,100,100,0.25); margin-bottom: ${12 * scaleFactor}px;"></div>
+        <div style="height: 1px; background: rgba(100,100,100,0.25); margin-bottom: ${12 * scaleFactor}px;"></div>
         <div style="height: 1px; background: rgba(100,100,100,0.25); width: 66%;"></div>
       `;
-      rightSide.appendChild(addressLines);
+      signatureArea.appendChild(addressLines);
 
       // Signature
       if (signatureDataUrl) {
         const sigImg = document.createElement("img");
         sigImg.src = signatureDataUrl;
-        sigImg.style.cssText = `width: 100%; height: 72px; object-fit: contain;`;
-        rightSide.appendChild(sigImg);
+        sigImg.style.cssText = `width: 100%; height: ${72 * scaleFactor}px; object-fit: contain;`;
+        signatureArea.appendChild(sigImg);
       } else {
         const sigPlaceholder = document.createElement("div");
         sigPlaceholder.style.cssText = `
           width: 100%;
-          height: 72px;
-          border: 2px dashed rgba(100,100,100,0.4);
-          border-radius: 8px;
+          height: ${72 * scaleFactor}px;
+          border: ${2 * scaleFactor}px dashed rgba(100,100,100,0.4);
+          border-radius: ${8 * scaleFactor}px;
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: 'Courier New', Courier, monospace;
-          font-size: 11px;
+          font-size: ${11 * scaleFactor}px;
           color: rgba(100,100,100,0.6);
         `;
         sigPlaceholder.textContent = "Your Signature";
-        rightSide.appendChild(sigPlaceholder);
+        signatureArea.appendChild(sigPlaceholder);
       }
 
-      contentArea.appendChild(rightSide);
-      backCard.appendChild(contentArea);
+      backCard.appendChild(signatureArea);
       collageContainer.appendChild(backCard);
 
       // Wait for images to load
@@ -539,18 +537,24 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
               <span className="text-[6px] text-muted-foreground/60 font-medium uppercase tracking-wide">Postage</span>
             </div>
             
-            {/* Dynamic Layout based on orientation */}
+            {/* Dynamic Layout based on orientation - CSS Grid */}
             {isLandscape ? (
-              /* Landscape: Horizontal split layout */
-              <div className="absolute inset-4 top-6 flex">
-                {/* Left side - Message area */}
-                <div className="flex-1 pr-4 flex flex-col">
+              /* Landscape: Horizontal two-column grid */
+              <div 
+                className="absolute inset-4 top-6 grid gap-3"
+                style={{ 
+                  gridTemplateColumns: '1fr 1fr',
+                  gridTemplateRows: '1fr',
+                }}
+              >
+                {/* Left column - Message area (full height) */}
+                <div className="flex flex-col h-full pr-2 border-r border-muted-foreground/30">
                   <Textarea
                     value={message}
                     onChange={handleMessageChange}
                     placeholder="Write your message here..."
                     className={cn(
-                      "flex-1 resize-none border-none bg-transparent p-0",
+                      "flex-1 resize-none border-none bg-transparent p-0 h-full",
                       "text-sm leading-relaxed",
                       "placeholder:text-muted-foreground/40",
                       "focus-visible:ring-0 focus-visible:ring-offset-0"
@@ -573,115 +577,8 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
                   </div>
                 </div>
                 
-                {/* Vertical divider - center */}
-                <div className="w-px bg-muted-foreground/30 mx-2 self-stretch" />
-                
-                {/* Right side - Signature area */}
-                <div className="flex-1 pl-4 flex flex-col justify-end">
-                  {/* Decorative address lines */}
-                  <div className="w-full space-y-3 mb-6">
-                    <div className="h-px bg-muted-foreground/25" />
-                    <div className="h-px bg-muted-foreground/25" />
-                    <div className="h-px bg-muted-foreground/25 w-2/3" />
-                  </div>
-                  
-                  {/* Signature area */}
-                  <AnimatePresence mode="wait">
-                    {signatureDataUrl ? (
-                      <motion.div
-                        key="signature"
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ 
-                          opacity: 1, 
-                          scale: 1,
-                          filter: isSignaturePrinting 
-                            ? ["blur(2px)", "blur(0px)"] 
-                            : "blur(0px)",
-                        }}
-                        transition={{ 
-                          duration: 0.6,
-                          ease: [0.4, 0, 0.2, 1],
-                        }}
-                        className="w-full h-20 relative"
-                        onClick={() => setIsSignatureModalOpen(true)}
-                      >
-                        {isSignaturePrinting && (
-                          <motion.div
-                            className="absolute inset-0 bg-foreground/10 rounded-lg"
-                            initial={{ opacity: 1 }}
-                            animate={{ opacity: 0 }}
-                            transition={{ duration: 0.6 }}
-                          />
-                        )}
-                        <img
-                          src={signatureDataUrl}
-                          alt="Your signature"
-                          className="w-full h-full object-contain"
-                          style={{
-                            filter: isSignaturePrinting ? "contrast(1.3)" : "none",
-                          }}
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.button 
-                        key="tap-to-sign"
-                        className={cn(
-                          "w-full h-20 border-2 border-dashed border-muted-foreground/40 rounded-lg",
-                          "flex items-center justify-center",
-                          "hover:border-primary/50 hover:bg-primary/5 transition-colors",
-                          "cursor-pointer"
-                        )}
-                        onClick={() => setIsSignatureModalOpen(true)}
-                      >
-                        <span 
-                          className="text-sm text-muted-foreground/60"
-                          style={{ fontFamily: "'Courier New', Courier, monospace" }}
-                        >
-                          Tap to Sign
-                        </span>
-                      </motion.button>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-            ) : (
-              /* Portrait: Vertical stacked layout */
-              <div className="absolute inset-4 top-24 flex flex-col">
-                {/* Top half - Message area */}
-                <div className="flex-1 flex flex-col pb-4">
-                  <Textarea
-                    value={message}
-                    onChange={handleMessageChange}
-                    placeholder="Write your message here..."
-                    className={cn(
-                      "flex-1 resize-none border-none bg-transparent p-0",
-                      "text-sm leading-relaxed",
-                      "placeholder:text-muted-foreground/40",
-                      "focus-visible:ring-0 focus-visible:ring-offset-0"
-                    )}
-                    style={{
-                      fontFamily: "'Courier New', Courier, monospace",
-                      color: "#2c2c2c",
-                    }}
-                  />
-                  <div className="mt-2 text-right">
-                    <span 
-                      className="text-xs"
-                      style={{ 
-                        color: message.length >= MAX_MESSAGE_LENGTH ? "#ef4444" : "#9ca3af",
-                        fontFamily: "'Courier New', Courier, monospace",
-                      }}
-                    >
-                      {message.length}/{MAX_MESSAGE_LENGTH}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* Horizontal divider */}
-                <div className="h-px bg-muted-foreground/30 my-3" />
-                
-                {/* Bottom half - Signature area */}
-                <div className="flex-1 flex flex-col justify-end pt-2">
+                {/* Right column - Signature area (vertically centered) */}
+                <div className="flex flex-col justify-center pl-2 pr-16">
                   {/* Decorative address lines */}
                   <div className="w-full space-y-3 mb-4">
                     <div className="h-px bg-muted-foreground/25" />
@@ -706,7 +603,7 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
                           duration: 0.6,
                           ease: [0.4, 0, 0.2, 1],
                         }}
-                        className="w-full h-24 relative"
+                        className="w-full h-16 relative cursor-pointer"
                         onClick={() => setIsSignatureModalOpen(true)}
                       >
                         {isSignaturePrinting && (
@@ -730,7 +627,114 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
                       <motion.button 
                         key="tap-to-sign"
                         className={cn(
-                          "w-full h-24 border-2 border-dashed border-muted-foreground/40 rounded-lg",
+                          "w-full h-16 border-2 border-dashed border-muted-foreground/40 rounded-lg",
+                          "flex items-center justify-center",
+                          "hover:border-primary/50 hover:bg-primary/5 transition-colors",
+                          "cursor-pointer"
+                        )}
+                        onClick={() => setIsSignatureModalOpen(true)}
+                      >
+                        <span 
+                          className="text-sm text-muted-foreground/60"
+                          style={{ fontFamily: "'Courier New', Courier, monospace" }}
+                        >
+                          Tap to Sign
+                        </span>
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            ) : (
+              /* Portrait: Vertical two-row grid */
+              <div 
+                className="absolute inset-4 top-24 grid gap-3"
+                style={{ 
+                  gridTemplateColumns: '1fr',
+                  gridTemplateRows: '1fr 1fr',
+                }}
+              >
+                {/* Top row - Message area (full height) */}
+                <div className="flex flex-col h-full pb-2 border-b border-muted-foreground/30">
+                  <Textarea
+                    value={message}
+                    onChange={handleMessageChange}
+                    placeholder="Write your message here..."
+                    className={cn(
+                      "flex-1 resize-none border-none bg-transparent p-0 h-full",
+                      "text-sm leading-relaxed",
+                      "placeholder:text-muted-foreground/40",
+                      "focus-visible:ring-0 focus-visible:ring-offset-0"
+                    )}
+                    style={{
+                      fontFamily: "'Courier New', Courier, monospace",
+                      color: "#2c2c2c",
+                    }}
+                  />
+                  <div className="mt-2 text-right">
+                    <span 
+                      className="text-xs"
+                      style={{ 
+                        color: message.length >= MAX_MESSAGE_LENGTH ? "#ef4444" : "#9ca3af",
+                        fontFamily: "'Courier New', Courier, monospace",
+                      }}
+                    >
+                      {message.length}/{MAX_MESSAGE_LENGTH}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Bottom row - Signature area (vertically centered) */}
+                <div className="flex flex-col justify-center pt-2">
+                  {/* Decorative address lines */}
+                  <div className="w-full space-y-3 mb-4">
+                    <div className="h-px bg-muted-foreground/25" />
+                    <div className="h-px bg-muted-foreground/25" />
+                    <div className="h-px bg-muted-foreground/25 w-2/3" />
+                  </div>
+                  
+                  {/* Signature area */}
+                  <AnimatePresence mode="wait">
+                    {signatureDataUrl ? (
+                      <motion.div
+                        key="signature"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ 
+                          opacity: 1, 
+                          scale: 1,
+                          filter: isSignaturePrinting 
+                            ? ["blur(2px)", "blur(0px)"] 
+                            : "blur(0px)",
+                        }}
+                        transition={{ 
+                          duration: 0.6,
+                          ease: [0.4, 0, 0.2, 1],
+                        }}
+                        className="w-full h-20 relative cursor-pointer"
+                        onClick={() => setIsSignatureModalOpen(true)}
+                      >
+                        {isSignaturePrinting && (
+                          <motion.div
+                            className="absolute inset-0 bg-foreground/10 rounded-lg"
+                            initial={{ opacity: 1 }}
+                            animate={{ opacity: 0 }}
+                            transition={{ duration: 0.6 }}
+                          />
+                        )}
+                        <img
+                          src={signatureDataUrl}
+                          alt="Your signature"
+                          className="w-full h-full object-contain"
+                          style={{
+                            filter: isSignaturePrinting ? "contrast(1.3)" : "none",
+                          }}
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.button 
+                        key="tap-to-sign"
+                        className={cn(
+                          "w-full h-20 border-2 border-dashed border-muted-foreground/40 rounded-lg",
                           "flex items-center justify-center",
                           "hover:border-primary/50 hover:bg-primary/5 transition-colors",
                           "cursor-pointer"
