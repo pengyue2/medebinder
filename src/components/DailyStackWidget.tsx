@@ -4,14 +4,13 @@ import { cn } from "@/lib/utils";
 interface DailyStackWidgetProps {
   photoCount: number;
   organizedCount: number;
+  dailyGoal: number;
   onClick: () => void;
   coverImage?: string;
 }
 
-const GOAL = 10;
-
-const DailyStackWidget = ({ photoCount, organizedCount, onClick, coverImage }: DailyStackWidgetProps) => {
-  const progress = Math.min(organizedCount / GOAL, 1);
+const DailyStackWidget = ({ photoCount, organizedCount, dailyGoal, onClick, coverImage }: DailyStackWidgetProps) => {
+  const progress = dailyGoal > 0 ? Math.min(organizedCount / dailyGoal, 1) : 0;
   const circumference = 2 * Math.PI * 44; // radius = 44
   const strokeDashoffset = circumference * (1 - progress);
 
@@ -80,7 +79,7 @@ const DailyStackWidget = ({ photoCount, organizedCount, onClick, coverImage }: D
             className="text-sm font-bold bg-gradient-to-r from-orange-500 to-pink-500 bg-clip-text text-transparent"
             style={{ fontFamily: "'Inter', system-ui, sans-serif" }}
           >
-            {organizedCount}/{GOAL}
+            {organizedCount}/{dailyGoal}
           </span>
         </div>
       </div>
@@ -91,12 +90,12 @@ const DailyStackWidget = ({ photoCount, organizedCount, onClick, coverImage }: D
         <p className="text-sm text-muted-foreground mt-0.5">
           {photoCount} {photoCount === 1 ? "photo" : "photos"} to organize
         </p>
-        {organizedCount > 0 && organizedCount < GOAL && (
+        {organizedCount > 0 && organizedCount < dailyGoal && (
           <p className="text-xs text-primary mt-1 font-medium">
-            {GOAL - organizedCount} more to complete today's goal!
+            {dailyGoal - organizedCount} more to complete today's goal!
           </p>
         )}
-        {organizedCount >= GOAL && (
+        {organizedCount >= dailyGoal && dailyGoal > 0 && (
           <p className="text-xs text-green-500 mt-1 font-medium">
             Daily goal complete! ✓
           </p>
