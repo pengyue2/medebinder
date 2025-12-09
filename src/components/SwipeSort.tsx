@@ -315,7 +315,7 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
 
       {/* Summary Card Overlay - Fixed position, independent of parent */}
       <AnimatePresence>
-        {showSummaryCard && !showPhotoPicker && (
+        {showSummaryCard && !showPhotoPicker && !postcardPhoto && (
           <motion.div
             key="summary-overlay"
             initial={{ opacity: 0 }}
