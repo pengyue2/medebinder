@@ -9,6 +9,16 @@ import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const BinderView = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +30,7 @@ const BinderView = () => {
   const [showExhibition, setShowExhibition] = useState(false);
   const [isPhotoDetailOpen, setIsPhotoDetailOpen] = useState(false);
   const [showBinderPicker, setShowBinderPicker] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const binder = getBinderById(id || "");
 
@@ -49,6 +60,7 @@ const BinderView = () => {
     if (!id || selectedPhotos.size === 0) return;
     removePhotosFromBinder(id, Array.from(selectedPhotos));
     toast.success(`Deleted ${selectedPhotos.size} photo${selectedPhotos.size > 1 ? 's' : ''}`);
+    setShowDeleteConfirm(false);
     handleExitSelectionMode();
   }, [id, selectedPhotos, removePhotosFromBinder, handleExitSelectionMode]);
 
@@ -177,7 +189,7 @@ const BinderView = () => {
                 variant="ghost"
                 size="icon"
                 className="rounded-full text-foreground hover:text-destructive"
-                onClick={handleDeleteSelected}
+                onClick={() => setShowDeleteConfirm(true)}
               >
                 <Trash2 className="w-5 h-5" />
               </Button>
@@ -220,6 +232,27 @@ const BinderView = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedPhotos.size} photo{selectedPhotos.size > 1 ? 's' : ''}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. The selected photo{selectedPhotos.size > 1 ? 's' : ''} will be permanently removed from this binder.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSelected}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
