@@ -10,6 +10,8 @@ interface BindersContextType {
   deleteBinder: (id: string) => void;
   renameBinder: (id: string, newName: string) => void;
   addPhotoToBinder: (binderId: string, photo: Photo) => void;
+  removePhotosFromBinder: (binderId: string, photoIds: string[]) => void;
+  movePhotos: (fromBinderId: string, toBinderId: string, photoIds: string[]) => void;
   getBinderById: (id: string) => Binder | undefined;
   totalCount: number;
 }
@@ -57,6 +59,53 @@ export function BindersProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const removePhotosFromBinder = useCallback((binderId: string, photoIds: string[]) => {
+    setBinders((prev) =>
+      prev.map((binder) => {
+        if (binder.id !== binderId) return binder;
+        const updatedPhotos = binder.photos.filter((p) => !photoIds.includes(p.id));
+        return {
+          ...binder,
+          photos: updatedPhotos,
+          photoCount: updatedPhotos.length,
+          coverImage: updatedPhotos[0]?.url || "",
+        };
+      })
+    );
+  }, []);
+
+  const movePhotos = useCallback((fromBinderId: string, toBinderId: string, photoIds: string[]) => {
+    setBinders((prev) => {
+      const fromBinder = prev.find((b) => b.id === fromBinderId);
+      if (!fromBinder) return prev;
+
+      const photosToMove = fromBinder.photos.filter((p) => photoIds.includes(p.id));
+      if (photosToMove.length === 0) return prev;
+
+      return prev.map((binder) => {
+        if (binder.id === fromBinderId) {
+          const updatedPhotos = binder.photos.filter((p) => !photoIds.includes(p.id));
+          return {
+            ...binder,
+            photos: updatedPhotos,
+            photoCount: updatedPhotos.length,
+            coverImage: updatedPhotos[0]?.url || "",
+          };
+        }
+        if (binder.id === toBinderId) {
+          const updatedPhotos = [...photosToMove, ...binder.photos];
+          return {
+            ...binder,
+            photos: updatedPhotos,
+            photoCount: updatedPhotos.length,
+            coverImage: photosToMove[0]?.url || binder.coverImage,
+          };
+        }
+        return binder;
+      });
+    });
+  }, []);
+
   const getBinderById = useCallback(
     (id: string) => binders.find((b) => b.id === id),
     [binders]
@@ -82,10 +131,12 @@ export function BindersProvider({ children }: { children: ReactNode }) {
       deleteBinder,
       renameBinder,
       addPhotoToBinder,
+      removePhotosFromBinder,
+      movePhotos,
       getBinderById,
       totalCount: binders.length,
     }),
-    [binders, filteredBinders, searchQuery, createBinder, deleteBinder, renameBinder, addPhotoToBinder, getBinderById]
+    [binders, filteredBinders, searchQuery, createBinder, deleteBinder, renameBinder, addPhotoToBinder, removePhotosFromBinder, movePhotos, getBinderById]
   );
 
   return (

@@ -3,19 +3,23 @@ import { ArrowLeft, MoreVertical, Play, X, Trash2, FolderInput, ImageIcon } from
 import { Button } from "@/components/ui/button";
 import PhotoGrid from "@/components/PhotoGrid";
 import ExhibitionMode from "@/components/ExhibitionMode";
+import BinderPickerModal from "@/components/BinderPickerModal";
 import { useBinders } from "@/context/BindersContext";
 import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 const BinderView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getBinderById } = useBinders();
+  const { getBinderById, binders, removePhotosFromBinder, movePhotos, createBinder } = useBinders();
   
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
   const [showExhibition, setShowExhibition] = useState(false);
   const [isPhotoDetailOpen, setIsPhotoDetailOpen] = useState(false);
+  const [showBinderPicker, setShowBinderPicker] = useState(false);
   
   const binder = getBinderById(id || "");
 
@@ -40,6 +44,25 @@ const BinderView = () => {
     setSelectionMode(false);
     setSelectedPhotos(new Set());
   }, []);
+
+  const handleDeleteSelected = useCallback(() => {
+    if (!id || selectedPhotos.size === 0) return;
+    removePhotosFromBinder(id, Array.from(selectedPhotos));
+    toast.success(`Deleted ${selectedPhotos.size} photo${selectedPhotos.size > 1 ? 's' : ''}`);
+    handleExitSelectionMode();
+  }, [id, selectedPhotos, removePhotosFromBinder, handleExitSelectionMode]);
+
+  const handleMoveSelected = useCallback((targetBinderId: string) => {
+    if (!id || selectedPhotos.size === 0) return;
+    movePhotos(id, targetBinderId, Array.from(selectedPhotos));
+    const targetBinder = binders.find(b => b.id === targetBinderId);
+    toast.success(`Moved ${selectedPhotos.size} photo${selectedPhotos.size > 1 ? 's' : ''} to "${targetBinder?.title}"`);
+    setShowBinderPicker(false);
+    handleExitSelectionMode();
+  }, [id, selectedPhotos, movePhotos, binders, handleExitSelectionMode]);
+
+  // Filter out current binder from picker options
+  const availableBinders = binders.filter(b => b.id !== id);
   
   if (!binder) {
     return (
@@ -146,6 +169,7 @@ const BinderView = () => {
                 variant="ghost"
                 size="icon"
                 className="rounded-full text-foreground hover:text-primary"
+                onClick={() => setShowBinderPicker(true)}
               >
                 <FolderInput className="w-5 h-5" />
               </Button>
@@ -153,6 +177,7 @@ const BinderView = () => {
                 variant="ghost"
                 size="icon"
                 className="rounded-full text-foreground hover:text-destructive"
+                onClick={handleDeleteSelected}
               >
                 <Trash2 className="w-5 h-5" />
               </Button>
@@ -183,6 +208,18 @@ const BinderView = () => {
           onClose={() => setShowExhibition(false)} 
         />
       )}
+
+      {/* Binder Picker Modal for Move action */}
+      <AnimatePresence>
+        {showBinderPicker && (
+          <BinderPickerModal
+            binders={availableBinders}
+            onSelect={handleMoveSelected}
+            onClose={() => setShowBinderPicker(false)}
+            onCreateBinder={createBinder}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
