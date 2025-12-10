@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { BindersProvider } from "./context/BindersContext";
+import { AppProvider } from "./context/AppContext";
 import Index from "./pages/Index";
 import BinderView from "./pages/BinderView";
 import NotFound from "./pages/NotFound";
@@ -13,17 +14,19 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <BindersProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/binder/:id" element={<BinderView />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </BindersProvider>
+      <AppProvider>
+        <BindersProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/binder/:id" element={<BinderView />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </BindersProvider>
+      </AppProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
