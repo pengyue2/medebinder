@@ -582,19 +582,24 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
             />
             
             {/* Postage Stamp - clickable to change */}
-            <button 
-              onClick={() => setShowStampPicker(true)}
-              className="absolute top-4 right-4 w-12 h-16 bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded flex flex-col items-center justify-center hover:border-primary/50 hover:bg-primary/10 transition-colors cursor-pointer"
-            >
-              {selectedStamp ? (
-                <span className="text-3xl">{selectedStamp}</span>
-              ) : (
-                <>
-                  <div className="w-8 h-8 bg-muted-foreground/20 rounded mb-1" />
-                  <span className="text-[6px] text-muted-foreground/60 font-medium uppercase tracking-wide">Postage</span>
-                </>
-              )}
-            </button>
+            <div className="absolute top-2 right-2 z-20 p-2">
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowStampPicker(true);
+                }}
+                className="w-14 h-18 bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded flex flex-col items-center justify-center hover:border-primary/50 hover:bg-primary/10 transition-colors cursor-pointer active:scale-95"
+              >
+                {selectedStamp ? (
+                  <span className="text-3xl">{selectedStamp}</span>
+                ) : (
+                  <>
+                    <div className="w-8 h-8 bg-muted-foreground/20 rounded mb-1" />
+                    <span className="text-[6px] text-muted-foreground/60 font-medium uppercase tracking-wide">Postage</span>
+                  </>
+                )}
+              </button>
+            </div>
 
             {/* Stamp Picker Modal */}
             <AnimatePresence>
