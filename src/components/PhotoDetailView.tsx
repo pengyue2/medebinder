@@ -299,10 +299,14 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
         align-items: center;
         justify-content: center;
       `;
-      stamp.innerHTML = `
-        <div style="width: 32px; height: 32px; background: rgba(100,100,100,0.2); border-radius: 4px; margin-bottom: 4px;"></div>
-        <span style="font-size: 8px; color: rgba(100,100,100,0.6); font-weight: 500; text-transform: uppercase;">Postage</span>
-      `;
+      if (selectedStamp) {
+        stamp.innerHTML = `<span style="font-size: 32px;">${selectedStamp}</span>`;
+      } else {
+        stamp.innerHTML = `
+          <div style="width: 32px; height: 32px; background: rgba(100,100,100,0.2); border-radius: 4px; margin-bottom: 4px;"></div>
+          <span style="font-size: 8px; color: rgba(100,100,100,0.6); font-weight: 500; text-transform: uppercase;">Postage</span>
+        `;
+      }
       backCard.appendChild(stamp);
 
       // Content container
