@@ -1,29 +1,40 @@
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Header from "@/components/Header";
 import BinderCard from "@/components/BinderCard";
 import DailyStackWidget from "@/components/DailyStackWidget";
 import DayCompleteWidget from "@/components/DayCompleteWidget";
 import SwipeSort from "@/components/SwipeSort";
 import CreateBinderModal from "@/components/CreateBinderModal";
-import { useUnsortedPhotos } from "@/hooks/useUnsortedPhotos";
+import { useApp } from "@/context/AppContext";
 import { useBinders } from "@/context/BindersContext";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const [showSwipeSort, setShowSwipeSort] = useState(false);
-  const [organizedCount, setOrganizedCount] = useState(0);
   const [showCreateBinder, setShowCreateBinder] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isDayComplete, setIsDayComplete] = useState(false);
-  const completedGoalRef = useRef(0);
   
-  const { unsortedPhotos, addPhotos, removePhotos, count: unsortedCount } = useUnsortedPhotos();
+  const { 
+    unsortedPhotos, 
+    addPhotos, 
+    removePhotos, 
+    unsortedCount,
+    dailyProgress,
+    dailyGoal,
+    markDayComplete,
+    resetDailyProgress,
+    initializeDailySession,
+  } = useApp();
+  
   const { filteredBinders, searchQuery, setSearchQuery, createBinder, deleteBinder, renameBinder, totalCount, binders, addPhotoToBinder } = useBinders();
   const { toast } = useToast();
 
-  const handleOrganizedCountChange = useCallback((count: number) => {
-    setOrganizedCount(count);
-  }, []);
+  // Initialize daily session when component mounts with photos
+  useEffect(() => {
+    if (unsortedCount > 0 && dailyProgress.initialCount === 0) {
+      initializeDailySession();
+    }
+  }, [unsortedCount, dailyProgress.initialCount, initializeDailySession]);
 
   const handleSwipeSortClose = useCallback((organizedPhotoIds?: string[], goalWasCompleted?: boolean) => {
     setShowSwipeSort(false);
@@ -32,21 +43,18 @@ const Index = () => {
       
       // If the daily goal was completed, mark day as complete
       if (goalWasCompleted) {
-        completedGoalRef.current = organizedPhotoIds.length;
-        setIsDayComplete(true);
+        markDayComplete();
       }
     }
-    setOrganizedCount(0);
-  }, [removePhotos]);
+  }, [removePhotos, markDayComplete]);
 
   const handleRefillStack = useCallback(() => {
-    setIsDayComplete(false);
-    completedGoalRef.current = 0;
+    resetDailyProgress();
     toast({
       title: "Stack refilled",
       description: "You can continue organizing photos",
     });
-  }, [toast]);
+  }, [resetDailyProgress, toast]);
 
   const handleCreateBinder = useCallback((name: string) => {
     const newBinder = createBinder(name);
@@ -79,14 +87,7 @@ const Index = () => {
     }
   }, [isSearchOpen, setSearchQuery]);
 
-  const coverImage = useMemo(() => {
-    return unsortedPhotos[0]?.url;
-  }, [unsortedPhotos]);
-
-  // Daily goal: min of 10 or available photos
-  const dailyGoal = useMemo(() => {
-    return Math.min(10, unsortedCount);
-  }, [unsortedCount]);
+  const coverImage = unsortedPhotos[0]?.url;
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,21 +103,21 @@ const Index = () => {
       
       <main className="px-4 py-6 max-w-lg mx-auto safe-area-bottom">
         {/* Day Complete Widget - show when daily goal is done */}
-        {isDayComplete && (
+        {dailyProgress.isComplete && (
           <div className="mb-6">
             <DayCompleteWidget 
-              completedCount={completedGoalRef.current}
+              completedCount={dailyProgress.organizedCount}
               onRefill={handleRefillStack}
             />
           </div>
         )}
 
         {/* Daily Stack Widget - only show if there are unsorted photos and day is not complete */}
-        {!isDayComplete && unsortedCount > 0 && (
+        {!dailyProgress.isComplete && unsortedCount > 0 && (
           <div className="mb-6">
             <DailyStackWidget 
               photoCount={unsortedCount} 
-              organizedCount={organizedCount}
+              organizedCount={dailyProgress.organizedCount}
               dailyGoal={dailyGoal}
               onClick={() => setShowSwipeSort(true)}
               coverImage={coverImage}
@@ -125,7 +126,7 @@ const Index = () => {
         )}
 
         {/* Empty state for no photos */}
-        {!isDayComplete && unsortedCount === 0 && (
+        {!dailyProgress.isComplete && unsortedCount === 0 && (
           <div className="mb-6 p-6 rounded-2xl border-2 border-dashed border-muted-foreground/30 text-center">
             <p className="text-muted-foreground mb-2">No photos to organize</p>
             <p className="text-sm text-muted-foreground">
@@ -211,7 +212,6 @@ const Index = () => {
           binders={binders}
           dailyGoal={dailyGoal}
           onClose={handleSwipeSortClose}
-          onOrganizedCountChange={handleOrganizedCountChange}
           onAddPhotoToBinder={addPhotoToBinder}
           onCreateBinder={createBinder}
         />

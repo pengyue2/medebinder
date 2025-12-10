@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, useEffect, type ReactNode } from "react";
 import type { Binder, Photo } from "@/types/binder";
+
+const STORAGE_KEY_BINDERS = "app_binders";
 
 interface BindersContextType {
   binders: Binder[];
@@ -19,8 +21,27 @@ interface BindersContextType {
 const BindersContext = createContext<BindersContextType | null>(null);
 
 export function BindersProvider({ children }: { children: ReactNode }) {
-  const [binders, setBinders] = useState<Binder[]>([]);
+  const [binders, setBinders] = useState<Binder[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY_BINDERS);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error("Failed to load binders:", e);
+    }
+    return [];
+  });
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Persist binders to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_BINDERS, JSON.stringify(binders));
+    } catch (e) {
+      console.error("Failed to save binders:", e);
+    }
+  }, [binders]);
 
   const createBinder = useCallback((name: string) => {
     const newBinder: Binder = {

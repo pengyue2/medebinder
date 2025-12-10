@@ -9,12 +9,13 @@ import BinderPickerModal from "./BinderPickerModal";
 import PhotoDetailView from "./PhotoDetailView";
 import { useToast } from "@/hooks/use-toast";
 import SwipeLightbox from "./SwipeLightbox";
+import { useApp } from "@/context/AppContext";
+
 interface SwipeSortProps {
   photos: Photo[];
   binders: Binder[];
   dailyGoal: number;
   onClose: (organizedPhotoIds?: string[], goalWasCompleted?: boolean) => void;
-  onOrganizedCountChange?: (count: number) => void;
   onAddPhotoToBinder?: (binderId: string, photo: Photo) => void;
   onCreateBinder?: (name: string) => Binder;
 }
@@ -22,18 +23,19 @@ interface SwipeSortProps {
 const SWIPE_THRESHOLD = 100;
 const ROTATION_RANGE = 15;
 
-const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange, onAddPhotoToBinder, onCreateBinder }: SwipeSortProps) => {
+const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, onCreateBinder }: SwipeSortProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [exitDirection, setExitDirection] = useState<"left" | "right" | "up" | null>(null);
   const [showBinderPicker, setShowBinderPicker] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState<Photo | null>(null);
-  const [organizedCount, setOrganizedCount] = useState(0);
+  const [localOrganizedCount, setLocalOrganizedCount] = useState(0);
   const [organizedPhotos, setOrganizedPhotos] = useState<Photo[]>([]);
   const [showSummary, setShowSummary] = useState(false);
   const [showPhotoPicker, setShowPhotoPicker] = useState(false);
   const [postcardPhoto, setPostcardPhoto] = useState<Photo | null>(null);
   const [showLightbox, setShowLightbox] = useState(false);
   const { toast } = useToast();
+  const { incrementOrganizedCount, dailyProgress } = useApp();
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
@@ -47,21 +49,23 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
   const remainingCount = photos.length - currentIndex;
 
   const trackOrganizedPhoto = useCallback((photo: Photo) => {
-    const newCount = organizedCount + 1;
+    const newCount = localOrganizedCount + 1;
     const newOrganized = [...organizedPhotos, photo];
-    setOrganizedCount(newCount);
+    setLocalOrganizedCount(newCount);
     setOrganizedPhotos(newOrganized);
     
-    // Notify parent of the new count
-    onOrganizedCountChange?.(newCount);
+    // Update global progress
+    incrementOrganizedCount();
 
     // Check if we hit the daily goal - show summary card
-    if (newCount === dailyGoal && dailyGoal > 0) {
+    // Use global progress count + 1 to account for the current action
+    const totalOrganized = dailyProgress.organizedCount + 1;
+    if (totalOrganized === dailyGoal && dailyGoal > 0) {
       setTimeout(() => {
         setShowSummary(true);
       }, 400);
     }
-  }, [organizedCount, organizedPhotos, onOrganizedCountChange]);
+  }, [localOrganizedCount, organizedPhotos, incrementOrganizedCount, dailyProgress.organizedCount, dailyGoal]);
 
   const handleCreatePostcard = useCallback(() => {
     setShowPhotoPicker(true);
@@ -156,7 +160,8 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onOrganizedCountChange
     photosLength: photos.length, 
     showSummary, 
     showSummaryCard,
-    organizedCount,
+    localOrganizedCount,
+    globalOrganizedCount: dailyProgress.organizedCount,
     currentPhoto: !!currentPhoto 
   });
 
