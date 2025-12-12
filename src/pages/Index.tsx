@@ -8,11 +8,22 @@ import CreateBinderModal from "@/components/CreateBinderModal";
 import { useApp } from "@/context/AppContext";
 import { useBinders } from "@/context/BindersContext";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const Index = () => {
   const [showSwipeSort, setShowSwipeSort] = useState(false);
   const [showCreateBinder, setShowCreateBinder] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   
   const { 
     unsortedPhotos, 
@@ -100,11 +111,32 @@ const Index = () => {
         searchQuery={searchQuery}
         onSearchToggle={handleSearchToggle}
         onSearchChange={setSearchQuery}
-        onReset={() => {
-          resetAll();
-          window.location.reload();
-        }}
+        onReset={() => setShowResetConfirm(true)}
       />
+
+      {/* Reset Confirmation Dialog */}
+      <AlertDialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset all data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all your binders, photos, and progress. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                resetAll();
+                window.location.reload();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Reset Everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       <main className="px-4 py-6 max-w-lg mx-auto safe-area-bottom">
         {/* Day Complete Widget - show when daily goal is done */}
