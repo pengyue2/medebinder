@@ -18,16 +18,18 @@ interface SwipeSortProps {
   onClose: (organizedPhotoIds?: string[], goalWasCompleted?: boolean) => void;
   onAddPhotoToBinder?: (binderId: string, photo: Photo) => void;
   onCreateBinder?: (name: string) => Binder;
+  onSaveForLater?: (photo: Photo) => void;
 }
 
 const SWIPE_THRESHOLD = 100;
 const ROTATION_RANGE = 15;
 
-const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, onCreateBinder }: SwipeSortProps) => {
+const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, onCreateBinder, onSaveForLater }: SwipeSortProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [exitDirection, setExitDirection] = useState<"left" | "right" | "up" | null>(null);
   const [showBinderPicker, setShowBinderPicker] = useState(false);
   const [pendingPhoto, setPendingPhoto] = useState<Photo | null>(null);
+  const [pendingFavorite, setPendingFavorite] = useState(false); // Track if swipe was up (favorite)
   const [localOrganizedCount, setLocalOrganizedCount] = useState(0);
   const [organizedPhotos, setOrganizedPhotos] = useState<Photo[]>([]);
   const [showSummary, setShowSummary] = useState(false);
@@ -83,28 +85,25 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, on
   const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const { offset, velocity } = info;
 
-    // Check for swipe up (favorite)
+    // Check for swipe up (favorite + sort) - opens binder picker with favorite flag
     if (offset.y < -SWIPE_THRESHOLD || (velocity.y < -500 && offset.y < -50)) {
-      setExitDirection("up");
-      trackOrganizedPhoto(currentPhoto);
-      toast({
-        title: "Added to Favorites",
-        description: "Photo marked as favorite ❤️",
-      });
-      setTimeout(() => {
-        setCurrentIndex((prev) => prev + 1);
-        setExitDirection(null);
-      }, 300);
+      setPendingPhoto(currentPhoto);
+      setPendingFavorite(true);
+      setShowBinderPicker(true);
+      // Reset position
+      x.set(0);
+      y.set(0);
       return;
     }
 
-    // Check for swipe left (archive)
+    // Check for swipe left (save for later - push back to unsorted)
     if (offset.x < -SWIPE_THRESHOLD || (velocity.x < -500 && offset.x < -50)) {
       setExitDirection("left");
-      trackOrganizedPhoto(currentPhoto);
+      // Push photo back to unsorted photos
+      onSaveForLater?.(currentPhoto);
       toast({
-        title: "Archived",
-        description: "Photo hidden from daily stack",
+        title: "Saved for later",
+        description: "Photo moved back to your library",
       });
       setTimeout(() => {
         setCurrentIndex((prev) => prev + 1);
@@ -116,6 +115,7 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, on
     // Check for swipe right (add to binder)
     if (offset.x > SWIPE_THRESHOLD || (velocity.x > 500 && offset.x > 50)) {
       setPendingPhoto(currentPhoto);
+      setPendingFavorite(false);
       setShowBinderPicker(true);
       // Reset position
       x.set(0);
@@ -126,30 +126,36 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, on
     // Reset if no threshold met
     x.set(0);
     y.set(0);
-  }, [currentPhoto, toast, x, y, trackOrganizedPhoto]);
+  }, [currentPhoto, toast, x, y, onSaveForLater]);
 
   const handleBinderSelect = useCallback((binderId: string) => {
     const binder = binders.find((b) => b.id === binderId);
     setShowBinderPicker(false);
-    setExitDirection("right");
+    setExitDirection(pendingFavorite ? "up" : "right");
     if (pendingPhoto) {
       trackOrganizedPhoto(pendingPhoto);
-      onAddPhotoToBinder?.(binderId, pendingPhoto);
+      // If this was a swipe up (favorite), mark the photo as favorite
+      const photoToAdd = pendingFavorite 
+        ? { ...pendingPhoto, isFavorite: true }
+        : pendingPhoto;
+      onAddPhotoToBinder?.(binderId, photoToAdd);
     }
     toast({
-      title: `Added to ${binder?.title || "Binder"}`,
-      description: "Photo organized successfully ✓",
+      title: pendingFavorite ? "Favorited & Sorted!" : `Added to ${binder?.title || "Binder"}`,
+      description: pendingFavorite ? "Photo marked as favorite ❤️" : "Photo organized successfully ✓",
     });
     setTimeout(() => {
       setCurrentIndex((prev) => prev + 1);
       setExitDirection(null);
       setPendingPhoto(null);
+      setPendingFavorite(false);
     }, 300);
-  }, [binders, toast, pendingPhoto, trackOrganizedPhoto, onAddPhotoToBinder]);
+  }, [binders, toast, pendingPhoto, pendingFavorite, trackOrganizedPhoto, onAddPhotoToBinder]);
 
   const handleBinderPickerClose = useCallback(() => {
     setShowBinderPicker(false);
     setPendingPhoto(null);
+    setPendingFavorite(false);
   }, []);
 
   // Summary Card - shown when 10 photos organized OR all photos sorted

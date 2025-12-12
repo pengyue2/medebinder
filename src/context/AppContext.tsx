@@ -17,6 +17,7 @@ interface AppContextType {
   addPhotos: (files: FileList) => number;
   removePhoto: (id: string) => void;
   removePhotos: (ids: string[]) => void;
+  movePhotoToEnd: (id: string) => void;
   clearAllPhotos: () => void;
   unsortedCount: number;
   
@@ -163,6 +164,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Move a photo to the end of the array (save for later)
+  const movePhotoToEnd = useCallback((id: string) => {
+    setUnsortedPhotos((prev) => {
+      const photoIndex = prev.findIndex((p) => p.id === id);
+      if (photoIndex === -1) return prev;
+      const photo = prev[photoIndex];
+      const newPhotos = [...prev.slice(0, photoIndex), ...prev.slice(photoIndex + 1), photo];
+      return newPhotos;
+    });
+  }, []);
+
   const clearAllPhotos = useCallback(() => {
     unsortedPhotos.forEach((photo) => {
       URL.revokeObjectURL(photo.url);
@@ -216,6 +228,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addPhotos,
       removePhoto,
       removePhotos,
+      movePhotoToEnd,
       clearAllPhotos,
       unsortedCount: unsortedPhotos.length,
       dailyProgress,
@@ -231,6 +244,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addPhotos,
       removePhoto,
       removePhotos,
+      movePhotoToEnd,
       clearAllPhotos,
       dailyProgress,
       dailyGoal,
