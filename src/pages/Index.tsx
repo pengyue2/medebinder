@@ -28,7 +28,8 @@ const Index = () => {
   const { 
     unsortedPhotos, 
     addPhotos, 
-    removePhotos, 
+    removePhotos,
+    movePhotoToEnd,
     unsortedCount,
     dailyProgress,
     dailyGoal,
@@ -247,6 +248,7 @@ const Index = () => {
           onClose={handleSwipeSortClose}
           onAddPhotoToBinder={addPhotoToBinder}
           onCreateBinder={createBinder}
+          onSaveForLater={(photo) => movePhotoToEnd(photo.id)}
         />
       )}
 
