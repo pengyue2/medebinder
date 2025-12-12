@@ -27,6 +27,9 @@ interface AppContextType {
   markDayComplete: () => void;
   resetDailyProgress: () => void;
   initializeDailySession: () => void;
+  
+  // Full reset
+  resetAll: () => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -191,6 +194,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, [unsortedPhotos.length]);
 
+  const resetAll = useCallback(() => {
+    // Clear all unsorted photos
+    unsortedPhotos.forEach((photo) => {
+      URL.revokeObjectURL(photo.url);
+    });
+    setUnsortedPhotos([]);
+    
+    // Reset daily progress
+    setDailyProgress(getDefaultProgress());
+    
+    // Clear localStorage
+    localStorage.removeItem(STORAGE_KEY_UNSORTED);
+    localStorage.removeItem(STORAGE_KEY_PROGRESS);
+    localStorage.removeItem("app_binders");
+  }, [unsortedPhotos]);
+
   const value = useMemo(
     () => ({
       unsortedPhotos,
@@ -205,6 +224,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       markDayComplete,
       resetDailyProgress,
       initializeDailySession,
+      resetAll,
     }),
     [
       unsortedPhotos,
@@ -218,6 +238,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       markDayComplete,
       resetDailyProgress,
       initializeDailySession,
+      resetAll,
     ]
   );
 

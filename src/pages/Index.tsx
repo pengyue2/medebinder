@@ -24,6 +24,7 @@ const Index = () => {
     markDayComplete,
     resetDailyProgress,
     initializeDailySession,
+    resetAll,
   } = useApp();
   
   const { filteredBinders, searchQuery, setSearchQuery, createBinder, deleteBinder, renameBinder, totalCount, binders, addPhotoToBinder, toggleBinderFavorite } = useBinders();
@@ -99,6 +100,10 @@ const Index = () => {
         searchQuery={searchQuery}
         onSearchToggle={handleSearchToggle}
         onSearchChange={setSearchQuery}
+        onReset={() => {
+          resetAll();
+          window.location.reload();
+        }}
       />
       
       <main className="px-4 py-6 max-w-lg mx-auto safe-area-bottom">
