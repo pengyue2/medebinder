@@ -160,11 +160,7 @@ const Index = () => {
                   animationFillMode: "backwards",
                 }}
               >
-                <BinderCard 
-                  binder={binder} 
-                  onRename={handleRenameBinder}
-                  onDelete={handleDeleteBinder}
-                />
+                <BinderCard binder={binder} />
               </div>
             ))}
           </div>

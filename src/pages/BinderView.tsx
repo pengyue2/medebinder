@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, MoreVertical, Play, X, Trash2, FolderInput, ImageIcon } from "lucide-react";
+import { ArrowLeft, MoreVertical, Play, X, Trash2, FolderInput, ImageIcon, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PhotoGrid from "@/components/PhotoGrid";
 import ExhibitionMode from "@/components/ExhibitionMode";
@@ -19,11 +19,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const BinderView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getBinderById, binders, removePhotosFromBinder, movePhotos, createBinder } = useBinders();
+  const { getBinderById, binders, removePhotosFromBinder, movePhotos, createBinder, renameBinder, deleteBinder } = useBinders();
   
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
@@ -31,6 +37,7 @@ const BinderView = () => {
   const [isPhotoDetailOpen, setIsPhotoDetailOpen] = useState(false);
   const [showBinderPicker, setShowBinderPicker] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteBinderConfirm, setShowDeleteBinderConfirm] = useState(false);
   
   const binder = getBinderById(id || "");
 
@@ -75,6 +82,22 @@ const BinderView = () => {
 
   // Filter out current binder from picker options
   const availableBinders = binders.filter(b => b.id !== id);
+
+  const handleRenameBinder = () => {
+    if (!binder) return;
+    const newName = prompt("Enter new binder name:", binder.title);
+    if (newName && newName.trim() && newName !== binder.title) {
+      renameBinder(binder.id, newName.trim());
+      toast.success("Binder renamed");
+    }
+  };
+
+  const handleDeleteBinder = () => {
+    if (!binder) return;
+    deleteBinder(binder.id);
+    toast.success("Binder deleted");
+    navigate("/");
+  };
   
   if (!binder) {
     return (
@@ -121,13 +144,30 @@ const BinderView = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full glass text-foreground"
-          >
-            <MoreVertical className="w-5 h-5" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full glass text-foreground"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="z-50 bg-popover">
+              <DropdownMenuItem onClick={handleRenameBinder}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Rename Binder
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setShowDeleteBinderConfirm(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete Binder
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         
         {/* Title */}
@@ -246,6 +286,27 @@ const BinderView = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteSelected}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Binder Confirmation Dialog */}
+      <AlertDialog open={showDeleteBinderConfirm} onOpenChange={setShowDeleteBinderConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete "{binder.title}"?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this binder and all its photos. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteBinder}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
