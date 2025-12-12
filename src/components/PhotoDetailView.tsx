@@ -11,15 +11,16 @@ import { toast } from "sonner";
 interface PhotoDetailViewProps {
   photo: Photo;
   onClose: () => void;
+  onToggleFavorite?: () => void;
 }
 
 const MAX_MESSAGE_LENGTH = 150;
 
 const STAMP_OPTIONS = ["🌎", "✈️", "💌", "🏛️", "🏔️", "🌅", "🎭", "🌸"];
 
-const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
+const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewProps) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isFavorited, setIsFavorited] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(photo.isFavorite || false);
   const [message, setMessage] = useState("");
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
@@ -771,9 +772,12 @@ const PhotoDetailView = ({ photo, onClose }: PhotoDetailViewProps) => {
             size="icon"
             className={cn(
               "rounded-full transition-colors",
-              isFavorited ? "text-red-500" : "text-foreground"
+              isFavorited ? "text-primary" : "text-foreground"
             )}
-            onClick={() => setIsFavorited(!isFavorited)}
+            onClick={() => {
+              setIsFavorited(!isFavorited);
+              onToggleFavorite?.();
+            }}
           >
             <Heart className={cn("w-5 h-5", isFavorited && "fill-current")} />
           </Button>

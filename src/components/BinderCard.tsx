@@ -1,15 +1,43 @@
 import { Link } from "react-router-dom";
 import type { Binder } from "@/types/binder";
-import { ImageIcon } from "lucide-react";
+import { ImageIcon, Heart } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface BinderCardProps {
   binder: Binder;
+  onToggleFavorite?: (id: string) => void;
 }
 
-const BinderCard = ({ binder }: BinderCardProps) => {
+const BinderCard = ({ binder, onToggleFavorite }: BinderCardProps) => {
+  const handleFavoriteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onToggleFavorite?.(binder.id);
+  };
+
   return (
     <Link to={`/binder/${binder.id}`} className="block">
       <article className="binder-card group cursor-pointer relative">
+        {/* Favorite Heart Button */}
+        <button
+          onClick={handleFavoriteClick}
+          className={cn(
+            "absolute top-2 right-2 z-10 w-8 h-8 rounded-full flex items-center justify-center",
+            "bg-background/60 backdrop-blur-sm transition-all duration-200",
+            "hover:bg-background/80 hover:scale-110",
+            binder.isFavorite && "bg-primary/20"
+          )}
+        >
+          <Heart
+            className={cn(
+              "w-4 h-4 transition-colors duration-200",
+              binder.isFavorite
+                ? "fill-primary text-primary"
+                : "text-foreground/70 hover:text-primary"
+            )}
+          />
+        </button>
+
         {/* Cover Image */}
         <div className="aspect-[4/5] relative">
           {binder.coverImage ? (

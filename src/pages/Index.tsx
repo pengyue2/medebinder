@@ -26,7 +26,7 @@ const Index = () => {
     initializeDailySession,
   } = useApp();
   
-  const { filteredBinders, searchQuery, setSearchQuery, createBinder, deleteBinder, renameBinder, totalCount, binders, addPhotoToBinder } = useBinders();
+  const { filteredBinders, searchQuery, setSearchQuery, createBinder, deleteBinder, renameBinder, totalCount, binders, addPhotoToBinder, toggleBinderFavorite } = useBinders();
   const { toast } = useToast();
 
   // Initialize daily session when component mounts with photos
@@ -160,7 +160,7 @@ const Index = () => {
                   animationFillMode: "backwards",
                 }}
               >
-                <BinderCard binder={binder} />
+                <BinderCard binder={binder} onToggleFavorite={toggleBinderFavorite} />
               </div>
             ))}
           </div>

@@ -15,6 +15,8 @@ interface BindersContextType {
   removePhotosFromBinder: (binderId: string, photoIds: string[]) => void;
   movePhotos: (fromBinderId: string, toBinderId: string, photoIds: string[]) => void;
   getBinderById: (id: string) => Binder | undefined;
+  toggleBinderFavorite: (id: string) => void;
+  togglePhotoFavorite: (binderId: string, photoId: string) => void;
   totalCount: number;
 }
 
@@ -132,15 +134,44 @@ export function BindersProvider({ children }: { children: ReactNode }) {
     [binders]
   );
 
+  const toggleBinderFavorite = useCallback((id: string) => {
+    setBinders((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, isFavorite: !b.isFavorite } : b))
+    );
+  }, []);
+
+  const togglePhotoFavorite = useCallback((binderId: string, photoId: string) => {
+    setBinders((prev) =>
+      prev.map((binder) => {
+        if (binder.id !== binderId) return binder;
+        return {
+          ...binder,
+          photos: binder.photos.map((p) =>
+            p.id === photoId ? { ...p, isFavorite: !p.isFavorite } : p
+          ),
+        };
+      })
+    );
+  }, []);
+
+  // Sort binders: favorites first, then by creation order
+  const sortedBinders = useMemo(() => {
+    return [...binders].sort((a, b) => {
+      if (a.isFavorite && !b.isFavorite) return -1;
+      if (!a.isFavorite && b.isFavorite) return 1;
+      return 0;
+    });
+  }, [binders]);
+
   const filteredBinders = useMemo(() => {
     if (!searchQuery.trim()) {
-      return binders;
+      return sortedBinders;
     }
     const query = searchQuery.toLowerCase().trim();
-    return binders.filter((binder) =>
+    return sortedBinders.filter((binder) =>
       binder.title.toLowerCase().includes(query)
     );
-  }, [binders, searchQuery]);
+  }, [sortedBinders, searchQuery]);
 
   const value = useMemo(
     () => ({
@@ -155,9 +186,11 @@ export function BindersProvider({ children }: { children: ReactNode }) {
       removePhotosFromBinder,
       movePhotos,
       getBinderById,
+      toggleBinderFavorite,
+      togglePhotoFavorite,
       totalCount: binders.length,
     }),
-    [binders, filteredBinders, searchQuery, createBinder, deleteBinder, renameBinder, addPhotoToBinder, removePhotosFromBinder, movePhotos, getBinderById]
+    [binders, filteredBinders, searchQuery, createBinder, deleteBinder, renameBinder, addPhotoToBinder, removePhotosFromBinder, movePhotos, getBinderById, toggleBinderFavorite, togglePhotoFavorite]
   );
 
   return (

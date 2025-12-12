@@ -29,7 +29,7 @@ import {
 const BinderView = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getBinderById, binders, removePhotosFromBinder, movePhotos, createBinder, renameBinder, deleteBinder } = useBinders();
+  const { getBinderById, binders, removePhotosFromBinder, movePhotos, createBinder, renameBinder, deleteBinder, togglePhotoFavorite } = useBinders();
   
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<Set<string>>(new Set());
@@ -183,11 +183,13 @@ const BinderView = () => {
       <main className="pb-24 safe-area-bottom">
         <PhotoGrid 
           photos={binder.photos}
+          binderId={binder.id}
           selectionMode={selectionMode}
           selectedPhotos={selectedPhotos}
           onToggleSelection={handleToggleSelection}
           onEnterSelectionMode={handleEnterSelectionMode}
           onPhotoDetailOpen={setIsPhotoDetailOpen}
+          onToggleFavorite={(photoId) => togglePhotoFavorite(binder.id, photoId)}
         />
         
         {/* Hint text */}
