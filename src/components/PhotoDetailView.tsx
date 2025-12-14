@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
 import { toast } from "sonner";
+import { useBinders } from "@/context/BindersContext";
 
 interface PhotoDetailViewProps {
   photo: Photo;
@@ -19,6 +20,7 @@ const MAX_MESSAGE_LENGTH = 150;
 const STAMP_OPTIONS = ["🌎", "✈️", "💌", "🏛️", "🏔️", "🌅", "🎭", "🌸"];
 
 const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewProps) => {
+  const { savePostcardToGallery } = useBinders();
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFavorited, setIsFavorited] = useState(photo.isFavorite || false);
   const [message, setMessage] = useState("");
@@ -410,6 +412,14 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
         canvas.toBlob((b) => resolve(b!), "image/png", 1.0);
       });
 
+      // Convert blob to data URL and save to postcard gallery
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        savePostcardToGallery(dataUrl);
+      };
+      reader.readAsDataURL(blob);
+
       const file = new File([blob], "postcard.png", { type: "image/png" });
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
@@ -540,12 +550,12 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
               />
             </div>
 
-            {/* Zoom hint */}
+            {/* Zoom hint - positioned at top center */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 glass rounded-full px-3 py-1.5 pointer-events-none"
+              className="absolute top-4 left-1/2 -translate-x-1/2 glass rounded-full px-3 py-1.5 pointer-events-none"
             >
               <span className="text-xs text-foreground/70">Double-tap to zoom</span>
             </motion.div>
@@ -867,7 +877,7 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
               />
             </motion.div>
 
-            {/* Zoom controls hint */}
+            {/* Zoom controls hint - only pinch to zoom instruction */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -876,7 +886,7 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
               className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2"
             >
               <span className="text-sm text-white/80">
-                Double-tap to zoom • Drag to pan • Tap outside to close
+                Pinch to Zoom
               </span>
             </motion.div>
           </motion.div>

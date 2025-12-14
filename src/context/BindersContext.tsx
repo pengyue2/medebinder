@@ -3,6 +3,9 @@ import type { Binder, Photo } from "@/types/binder";
 
 const STORAGE_KEY_BINDERS = "app_binders";
 
+const POSTCARDS_BINDER_ID = "binder-my-postcards";
+const POSTCARDS_BINDER_TITLE = "My Postcards";
+
 interface BindersContextType {
   binders: Binder[];
   filteredBinders: Binder[];
@@ -17,6 +20,7 @@ interface BindersContextType {
   getBinderById: (id: string) => Binder | undefined;
   toggleBinderFavorite: (id: string) => void;
   togglePhotoFavorite: (binderId: string, photoId: string) => void;
+  savePostcardToGallery: (postcardDataUrl: string) => void;
   totalCount: number;
 }
 
@@ -154,6 +158,45 @@ export function BindersProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  // Save postcard image to the "My Postcards" binder
+  const savePostcardToGallery = useCallback((postcardDataUrl: string) => {
+    setBinders((prev) => {
+      // Check if "My Postcards" binder exists
+      let postcardsBinder = prev.find((b) => b.id === POSTCARDS_BINDER_ID);
+      
+      const newPhoto: Photo = {
+        id: `postcard-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        url: postcardDataUrl,
+        alt: "Postcard",
+        createdAt: Date.now(),
+      };
+
+      if (postcardsBinder) {
+        // Add photo to existing "My Postcards" binder
+        return prev.map((binder) => {
+          if (binder.id !== POSTCARDS_BINDER_ID) return binder;
+          const updatedPhotos = [newPhoto, ...binder.photos];
+          return {
+            ...binder,
+            photos: updatedPhotos,
+            photoCount: updatedPhotos.length,
+            coverImage: newPhoto.url,
+          };
+        });
+      } else {
+        // Create "My Postcards" binder with this photo
+        const newBinder: Binder = {
+          id: POSTCARDS_BINDER_ID,
+          title: POSTCARDS_BINDER_TITLE,
+          coverImage: newPhoto.url,
+          photoCount: 1,
+          photos: [newPhoto],
+        };
+        return [newBinder, ...prev];
+      }
+    });
+  }, []);
+
   // Sort binders: favorites first, then by creation order
   const sortedBinders = useMemo(() => {
     return [...binders].sort((a, b) => {
@@ -188,9 +231,10 @@ export function BindersProvider({ children }: { children: ReactNode }) {
       getBinderById,
       toggleBinderFavorite,
       togglePhotoFavorite,
+      savePostcardToGallery,
       totalCount: binders.length,
     }),
-    [binders, filteredBinders, searchQuery, createBinder, deleteBinder, renameBinder, addPhotoToBinder, removePhotosFromBinder, movePhotos, getBinderById, toggleBinderFavorite, togglePhotoFavorite]
+    [binders, filteredBinders, searchQuery, createBinder, deleteBinder, renameBinder, addPhotoToBinder, removePhotosFromBinder, movePhotos, getBinderById, toggleBinderFavorite, togglePhotoFavorite, savePostcardToGallery]
   );
 
   return (
