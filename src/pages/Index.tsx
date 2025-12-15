@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import Header from "@/components/Header";
 import BinderCard from "@/components/BinderCard";
 import DailyStackWidget from "@/components/DailyStackWidget";
@@ -153,7 +154,7 @@ const Index = () => {
           </div>
         )}
 
-        {/* Daily Stack Widget - only show if there are unsorted photos and day is not complete */}
+        {/* Daily Stack Widget - show if there are unsorted photos and day is not complete */}
         {!dailyProgress.isComplete && unsortedCount > 0 && (
           <div className="mb-6">
             <DailyStackWidget 
@@ -166,8 +167,25 @@ const Index = () => {
           </div>
         )}
 
-        {/* Empty state for no photos */}
-        {!dailyProgress.isComplete && unsortedCount === 0 && (
+        {/* In-progress state - no photos left but goal not reached yet */}
+        {!dailyProgress.isComplete && unsortedCount === 0 && dailyProgress.organizedCount > 0 && (
+          <div className="mb-6 p-6 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 text-center">
+            <p className="text-lg font-semibold text-foreground mb-1">
+              {dailyProgress.organizedCount}/{dailyGoal} photos organized
+            </p>
+            <p className="text-muted-foreground mb-4">Upload more to reach your goal!</p>
+            <Button
+              variant="outline"
+              onClick={() => setTriggerUpload(true)}
+              className="rounded-full"
+            >
+              Upload more photos
+            </Button>
+          </div>
+        )}
+
+        {/* Empty state for no photos and no progress */}
+        {!dailyProgress.isComplete && unsortedCount === 0 && dailyProgress.organizedCount === 0 && (
           <div className="mb-6 p-6 rounded-2xl border-2 border-dashed border-muted-foreground/30 text-center">
             <p className="text-muted-foreground mb-2">No photos to organize</p>
             <p className="text-sm text-muted-foreground">
