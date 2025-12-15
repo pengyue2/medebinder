@@ -98,10 +98,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [dailyProgress]);
 
-  // Calculate daily goal: min of 10 or available photos
-  const dailyGoal = useMemo(() => {
-    return Math.min(10, dailyProgress.initialCount);
-  }, [dailyProgress.initialCount]);
+  // Daily goal is always hardcoded to 10
+  const dailyGoal = 10;
 
   // Initialize daily session when photos are available
   const initializeDailySession = useCallback(() => {
