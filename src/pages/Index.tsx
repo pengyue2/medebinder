@@ -24,6 +24,7 @@ const Index = () => {
   const [showCreateBinder, setShowCreateBinder] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [triggerUpload, setTriggerUpload] = useState(false);
   
   const { 
     unsortedPhotos, 
@@ -113,6 +114,8 @@ const Index = () => {
         onSearchToggle={handleSearchToggle}
         onSearchChange={setSearchQuery}
         onReset={() => setShowResetConfirm(true)}
+        triggerUpload={triggerUpload}
+        onUploadTriggered={() => setTriggerUpload(false)}
       />
 
       {/* Reset Confirmation Dialog */}
@@ -249,6 +252,7 @@ const Index = () => {
           onAddPhotoToBinder={addPhotoToBinder}
           onCreateBinder={createBinder}
           onSaveForLater={(photo) => movePhotoToEnd(photo.id)}
+          onUploadMore={() => setTriggerUpload(true)}
         />
       )}
 

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Settings, Upload, ImagePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,12 +11,22 @@ import { useToast } from "@/hooks/use-toast";
 interface LibraryPopoverProps {
   onPhotosLoaded: (files: FileList) => number;
   unsortedCount: number;
+  triggerOpen?: boolean;
+  onTriggerConsumed?: () => void;
 }
 
-const LibraryPopover = ({ onPhotosLoaded, unsortedCount }: LibraryPopoverProps) => {
+const LibraryPopover = ({ onPhotosLoaded, unsortedCount, triggerOpen = false, onTriggerConsumed }: LibraryPopoverProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Handle external trigger to open
+  useEffect(() => {
+    if (triggerOpen) {
+      setIsOpen(true);
+      onTriggerConsumed?.();
+    }
+  }, [triggerOpen, onTriggerConsumed]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

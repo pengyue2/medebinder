@@ -19,12 +19,13 @@ interface SwipeSortProps {
   onAddPhotoToBinder?: (binderId: string, photo: Photo) => void;
   onCreateBinder?: (name: string) => Binder;
   onSaveForLater?: (photo: Photo) => void;
+  onUploadMore?: () => void;
 }
 
 const SWIPE_THRESHOLD = 100;
 const ROTATION_RANGE = 15;
 
-const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, onCreateBinder, onSaveForLater }: SwipeSortProps) => {
+const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, onCreateBinder, onSaveForLater, onUploadMore }: SwipeSortProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [exitDirection, setExitDirection] = useState<"left" | "right" | "up" | null>(null);
   const [showBinderPicker, setShowBinderPicker] = useState(false);
@@ -158,16 +159,27 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, on
     setPendingFavorite(false);
   }, []);
 
-  // Summary Card - shown when 10 photos organized OR all photos sorted
-  const showSummaryCard = showSummary || currentIndex >= photos.length;
+  // Determine current state
+  const totalOrganizedSoFar = dailyProgress.organizedCount;
+  const goalReached = totalOrganizedSoFar >= dailyGoal;
+  const outOfPhotos = currentIndex >= photos.length;
+  
+  // Show success card only when goal is reached
+  const showSuccessCard = showSummary || goalReached;
+  // Show refill card when out of photos but goal not reached
+  const showRefillCard = outOfPhotos && !goalReached && !showSummary;
   
   console.log("SwipeSort debug:", { 
     currentIndex, 
     photosLength: photos.length, 
     showSummary, 
-    showSummaryCard,
+    showSuccessCard,
+    showRefillCard,
+    totalOrganizedSoFar,
+    dailyGoal,
+    goalReached,
+    outOfPhotos,
     localOrganizedCount,
-    globalOrganizedCount: dailyProgress.organizedCount,
     currentPhoto: !!currentPhoto 
   });
 
@@ -195,7 +207,7 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, on
       {/* Cards stack */}
       <div className="absolute inset-0 flex items-center justify-center pt-20 pb-32">
         <AnimatePresence mode="sync">
-          {!showSummaryCard && currentPhoto ? (
+          {!showSuccessCard && !showRefillCard && currentPhoto ? (
             // Regular card stack
             <motion.div
               key="card-stack"
@@ -292,8 +304,8 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, on
         </AnimatePresence>
       </div>
 
-      {/* Bottom instructions - hide when showing summary */}
-      {!showSummaryCard && (
+      {/* Bottom instructions - hide when showing summary or refill */}
+      {!showSuccessCard && !showRefillCard && (
         <div className="absolute bottom-8 left-0 right-0 z-20 safe-area-bottom">
           <div className="flex justify-center gap-8 px-8">
             <div className="flex flex-col items-center gap-1">
@@ -324,9 +336,90 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, on
         </div>
       )}
 
+      {/* Refill Card Overlay - shown when out of photos but goal not reached */}
+      <AnimatePresence>
+        {showRefillCard && (
+          <motion.div
+            key="refill-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] w-screen h-screen flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-[90vw] max-h-[90vh] w-full sm:max-w-sm"
+            >
+              <div className="glass-strong rounded-3xl p-8 text-center bg-gradient-to-br from-muted/20 via-background to-muted/20">
+                {/* Progress indicator */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                  className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/20 to-muted/20 flex items-center justify-center"
+                >
+                  <span className="text-2xl font-bold text-foreground">{totalOrganizedSoFar}/{dailyGoal}</span>
+                </motion.div>
+
+                {/* Title */}
+                <motion.h2
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-2xl font-bold text-foreground mb-2"
+                >
+                  Keep going!
+                </motion.h2>
+
+                {/* Subtitle */}
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-muted-foreground mb-8"
+                >
+                  Upload more photos to reach your daily goal.
+                </motion.p>
+
+                {/* Primary Button */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  <Button
+                    onClick={() => {
+                      onClose(organizedPhotos.map(p => p.id), false);
+                      onUploadMore?.();
+                    }}
+                    size="lg"
+                    className="w-full rounded-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity text-primary-foreground font-semibold shadow-lg"
+                  >
+                    Upload more photos
+                  </Button>
+                </motion.div>
+
+                {/* Secondary Link */}
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.6 }}
+                  onClick={() => onClose(organizedPhotos.map(p => p.id), false)}
+                  className="mt-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Back to Home
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Summary Card Overlay - Fixed position, independent of parent */}
       <AnimatePresence>
-        {showSummaryCard && !showPhotoPicker && !postcardPhoto && (
+        {showSuccessCard && !showPhotoPicker && !postcardPhoto && (
           <motion.div
             key="summary-overlay"
             initial={{ opacity: 0 }}
@@ -405,7 +498,7 @@ const SwipeSort = ({ photos, binders, dailyGoal, onClose, onAddPhotoToBinder, on
 
       {/* Photo Picker Overlay - Fixed position, independent of parent */}
       <AnimatePresence>
-        {showSummaryCard && showPhotoPicker && (
+        {showSuccessCard && showPhotoPicker && (
           <motion.div
             key="photo-picker-overlay"
             initial={{ opacity: 0 }}

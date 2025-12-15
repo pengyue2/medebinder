@@ -15,6 +15,8 @@ interface HeaderProps {
   onSearchToggle?: () => void;
   onSearchChange?: (query: string) => void;
   onReset?: () => void;
+  triggerUpload?: boolean;
+  onUploadTriggered?: () => void;
 }
 
 const Header = ({ 
@@ -27,6 +29,8 @@ const Header = ({
   onSearchToggle,
   onSearchChange,
   onReset,
+  triggerUpload = false,
+  onUploadTriggered,
 }: HeaderProps) => {
   return (
     <header className="glass-strong sticky top-0 z-50 px-4 py-3 safe-area-top relative">
@@ -52,7 +56,9 @@ const Header = ({
           {onPhotosLoaded && (
             <LibraryPopover 
               onPhotosLoaded={onPhotosLoaded} 
-              unsortedCount={unsortedCount} 
+              unsortedCount={unsortedCount}
+              triggerOpen={triggerUpload}
+              onTriggerConsumed={onUploadTriggered}
             />
           )}
           <Button
