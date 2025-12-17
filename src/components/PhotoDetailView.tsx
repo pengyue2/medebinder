@@ -471,8 +471,8 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
       {!isFlipped && (
         <motion.div
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          animate={{ opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 3.5, times: [0, 0.15, 0.85, 1] }}
           className="fixed top-20 left-1/2 -translate-x-1/2 z-50 glass rounded-full px-3 py-1.5 pointer-events-none"
         >
           <span className="text-xs text-foreground/70">Double-tap to zoom</span>
