@@ -467,6 +467,18 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
         <X className="w-5 h-5" />
       </Button>
 
+      {/* Zoom hint - positioned at top center of screen, outside card */}
+      {!isFlipped && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="fixed top-20 left-1/2 -translate-x-1/2 z-50 glass rounded-full px-3 py-1.5 pointer-events-none"
+        >
+          <span className="text-xs text-foreground/70">Double-tap to zoom</span>
+        </motion.div>
+      )}
+
       {/* 3D Card Container */}
       <motion.div
         ref={cardRef}
@@ -550,15 +562,6 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
               />
             </div>
 
-            {/* Zoom hint - positioned at top center */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="absolute top-4 left-1/2 -translate-x-1/2 glass rounded-full px-3 py-1.5 pointer-events-none"
-            >
-              <span className="text-xs text-foreground/70">Double-tap to zoom</span>
-            </motion.div>
             
             {/* Photo frame border */}
             <div className="absolute inset-0 border-[6px] border-card/30 rounded-2xl pointer-events-none" />
