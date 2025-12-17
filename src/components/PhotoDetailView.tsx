@@ -286,31 +286,26 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
       `;
       backCard.appendChild(paperTexture);
 
-      // Stamp - top right
-      const stamp = document.createElement("div");
-      stamp.style.cssText = `
-        position: absolute;
-        top: 16px;
-        right: 16px;
-        width: 48px;
-        height: 64px;
-        background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.2));
-        border: 2px dashed rgba(100,100,100,0.4);
-        border-radius: 4px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      `;
+      // Stamp - top right (only show if selected)
       if (selectedStamp) {
-        stamp.innerHTML = `<span style="font-size: 32px;">${selectedStamp}</span>`;
-      } else {
-        stamp.innerHTML = `
-          <div style="width: 32px; height: 32px; background: rgba(100,100,100,0.2); border-radius: 4px; margin-bottom: 4px;"></div>
-          <span style="font-size: 8px; color: rgba(100,100,100,0.6); font-weight: 500; text-transform: uppercase;">Postage</span>
+        const stamp = document.createElement("div");
+        stamp.style.cssText = `
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 52px;
+          height: 68px;
+          background: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          -webkit-mask: radial-gradient(circle at 4px 4px, transparent 3px, white 3px) -4px -4px / 8px 8px;
+          mask: radial-gradient(circle at 4px 4px, transparent 3px, white 3px) -4px -4px / 8px 8px;
         `;
+        stamp.innerHTML = `<span style="font-size: 32px;">${selectedStamp}</span>`;
+        backCard.appendChild(stamp);
       }
-      backCard.appendChild(stamp);
 
       // Content container
       const contentContainer = document.createElement("div");
@@ -600,13 +595,18 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
             />
             
             {/* Postage Stamp - clickable to change */}
-            <div className="absolute top-2 right-2 z-20 p-2">
+            <div className="absolute top-3 right-3 z-20">
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   setShowStampPicker(true);
                 }}
-                className="w-14 h-18 bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded flex flex-col items-center justify-center hover:border-primary/50 hover:bg-primary/10 transition-colors cursor-pointer active:scale-95"
+                className={cn(
+                  "w-14 h-[72px] flex flex-col items-center justify-center transition-all cursor-pointer active:scale-95",
+                  selectedStamp 
+                    ? "bg-white shadow-md [mask:radial-gradient(circle_at_3px_3px,transparent_2px,white_2px)_-3px_-3px/6px_6px]" 
+                    : "bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded hover:border-primary/50 hover:bg-primary/10"
+                )}
               >
                 {selectedStamp ? (
                   <span className="text-3xl">{selectedStamp}</span>
