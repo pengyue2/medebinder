@@ -299,8 +299,8 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
         
         const stamp = document.createElement("div");
         stamp.style.cssText = `
-          width: 52px;
-          height: 68px;
+          width: 56px;
+          height: 72px;
           background: white;
           display: flex;
           align-items: center;
@@ -314,7 +314,7 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
           -webkit-mask-position: -5px -5px;
           mask-position: -5px -5px;
         `;
-        stamp.innerHTML = `<span style="font-size: 32px;">${selectedStamp}</span>`;
+        stamp.innerHTML = `<span style="font-size: 30px;">${selectedStamp}</span>`;
         stampWrapper.appendChild(stamp);
         backCard.appendChild(stampWrapper);
       }
@@ -336,7 +336,7 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
         font-size: 14px;
         color: #2c2c2c;
         line-height: 1.6;
-        padding-right: 70px;
+        padding-right: 56px;
         white-space: pre-wrap;
         word-break: break-word;
       `;
