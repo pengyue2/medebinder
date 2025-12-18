@@ -604,19 +604,10 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
                 }}
                 className={cn(
                   "w-14 h-[72px] flex flex-col items-center justify-center transition-all cursor-pointer active:scale-95",
-                  !selectedStamp && "bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded hover:border-primary/50 hover:bg-primary/10"
+                  selectedStamp 
+                    ? "bg-white p-[5px] [filter:drop-shadow(0px_1px_2px_rgba(0,0,0,0.3))] [mask-image:radial-gradient(circle,transparent_4px,white_4px)_-4px_-4px/8px_8px]" 
+                    : "bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded hover:border-primary/50 hover:bg-primary/10"
                 )}
-                style={selectedStamp ? {
-                  background: 'white',
-                  padding: '5px',
-                  filter: 'drop-shadow(0px 1px 2px rgba(0,0,0,0.3))',
-                  WebkitMaskImage: 'radial-gradient(circle at 4px 4px, transparent 3px, white 3px)',
-                  WebkitMaskSize: '8px 8px',
-                  WebkitMaskPosition: '-4px -4px',
-                  maskImage: 'radial-gradient(circle at 4px 4px, transparent 3px, white 3px)',
-                  maskSize: '8px 8px',
-                  maskPosition: '-4px -4px',
-                } : undefined}
               >
                 {selectedStamp ? (
                   <span className="text-3xl">{selectedStamp}</span>
