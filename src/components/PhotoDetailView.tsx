@@ -288,24 +288,35 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
 
       // Stamp - top right (only show if selected)
       if (selectedStamp) {
-        const stamp = document.createElement("div");
-        stamp.style.cssText = `
+        // Shadow wrapper - since mask clips shadow
+        const stampWrapper = document.createElement("div");
+        stampWrapper.style.cssText = `
           position: absolute;
           top: 12px;
           right: 12px;
+          filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.25));
+        `;
+        
+        const stamp = document.createElement("div");
+        stamp.style.cssText = `
           width: 52px;
           height: 68px;
           background: white;
-          padding: 5px;
           display: flex;
           align-items: center;
           justify-content: center;
-          filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3));
-          -webkit-mask-image: radial-gradient(circle, transparent 4px, white 4px) -4px -4px / 8px 8px repeat;
-          mask-image: radial-gradient(circle, transparent 4px, white 4px) -4px -4px / 8px 8px repeat;
+          -webkit-mask-image: radial-gradient(circle, transparent 25%, black 25%);
+          mask-image: radial-gradient(circle, transparent 25%, black 25%);
+          -webkit-mask-size: 10px 10px;
+          mask-size: 10px 10px;
+          -webkit-mask-repeat: round;
+          mask-repeat: round;
+          -webkit-mask-position: -5px -5px;
+          mask-position: -5px -5px;
         `;
         stamp.innerHTML = `<span style="font-size: 32px;">${selectedStamp}</span>`;
-        backCard.appendChild(stamp);
+        stampWrapper.appendChild(stamp);
+        backCard.appendChild(stampWrapper);
       }
 
       // Content container
@@ -597,27 +608,35 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
             
             {/* Postage Stamp - clickable to change */}
             <div className="absolute top-3 right-3 z-20">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowStampPicker(true);
-                }}
+              {/* Shadow wrapper - since mask clips shadow, we need outer wrapper */}
+              <div 
                 className={cn(
-                  "w-14 h-[72px] flex flex-col items-center justify-center transition-all cursor-pointer active:scale-95",
-                  selectedStamp 
-                    ? "bg-white p-[5px] [filter:drop-shadow(0px_1px_2px_rgba(0,0,0,0.3))] [mask-image:radial-gradient(circle,transparent_4px,white_4px)_-4px_-4px/8px_8px]" 
-                    : "bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded hover:border-primary/50 hover:bg-primary/10"
+                  "transition-all",
+                  selectedStamp && "[filter:drop-shadow(0px_2px_4px_rgba(0,0,0,0.25))]"
                 )}
               >
-                {selectedStamp ? (
-                  <span className="text-3xl">{selectedStamp}</span>
-                ) : (
-                  <>
-                    <div className="w-8 h-8 bg-muted-foreground/20 rounded mb-1" />
-                    <span className="text-[6px] text-muted-foreground/60 font-medium uppercase tracking-wide">Postage</span>
-                  </>
-                )}
-              </button>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowStampPicker(true);
+                  }}
+                  className={cn(
+                    "w-14 h-[72px] transition-all cursor-pointer active:scale-95",
+                    selectedStamp 
+                      ? "bg-white flex items-center justify-center [mask-image:radial-gradient(circle,transparent_25%,black_25%)] [mask-size:10px_10px] [mask-repeat:round] [mask-position:-5px_-5px]" 
+                      : "flex flex-col items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded hover:border-primary/50 hover:bg-primary/10"
+                  )}
+                >
+                  {selectedStamp ? (
+                    <span className="text-3xl">{selectedStamp}</span>
+                  ) : (
+                    <>
+                      <div className="w-8 h-8 bg-muted-foreground/20 rounded mb-1" />
+                      <span className="text-[6px] text-muted-foreground/60 font-medium uppercase tracking-wide">Postage</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Stamp Picker Modal */}
