@@ -296,12 +296,13 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
           width: 52px;
           height: 68px;
           background: white;
+          padding: 5px;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-          -webkit-mask: radial-gradient(circle at 4px 4px, transparent 3px, white 3px) -4px -4px / 8px 8px;
-          mask: radial-gradient(circle at 4px 4px, transparent 3px, white 3px) -4px -4px / 8px 8px;
+          filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.3));
+          -webkit-mask-image: radial-gradient(circle, transparent 4px, white 4px) -4px -4px / 8px 8px repeat;
+          mask-image: radial-gradient(circle, transparent 4px, white 4px) -4px -4px / 8px 8px repeat;
         `;
         stamp.innerHTML = `<span style="font-size: 32px;">${selectedStamp}</span>`;
         backCard.appendChild(stamp);
@@ -604,7 +605,7 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
                 className={cn(
                   "w-14 h-[72px] flex flex-col items-center justify-center transition-all cursor-pointer active:scale-95",
                   selectedStamp 
-                    ? "bg-white shadow-md [mask:radial-gradient(circle_at_3px_3px,transparent_2px,white_2px)_-3px_-3px/6px_6px]" 
+                    ? "bg-white p-[5px] [filter:drop-shadow(0px_1px_2px_rgba(0,0,0,0.3))] [mask-image:radial-gradient(circle,transparent_4px,white_4px)_-4px_-4px/8px_8px]" 
                     : "bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded hover:border-primary/50 hover:bg-primary/10"
                 )}
               >
