@@ -451,7 +451,7 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
     } finally {
       setIsGeneratingShare(false);
     }
-  }, [photo.url, message, signatureDataUrl, photoAspectRatio]);
+  }, [photo.url, message, signatureDataUrl, photoAspectRatio, selectedStamp, savePostcardToGallery]);
 
   return (
     <motion.div
