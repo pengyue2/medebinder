@@ -331,8 +331,7 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
         `;
         
         if (selectedStamp.type === 'emoji') {
-          stamp.style.background = "linear-gradient(135deg, #fef3c7, #fed7aa)";
-          stamp.innerHTML = `<span style="font-size: 28px;">${selectedStamp.value}</span>`;
+          stamp.innerHTML = `<span style="font-size: 30px;">${selectedStamp.value}</span>`;
         } else {
           const imgStamp = IMAGE_STAMPS.find(s => s.id === selectedStamp.value);
           if (imgStamp) {
@@ -653,18 +652,7 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
                 >
                   {selectedStamp ? (
                     selectedStamp.type === 'emoji' ? (
-                      <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center"
-                        style={{
-                          maskImage: "radial-gradient(circle, transparent 25%, black 25%)",
-                          WebkitMaskImage: "radial-gradient(circle, transparent 25%, black 25%)",
-                          maskSize: "8px 8px",
-                          WebkitMaskSize: "8px 8px",
-                          maskPosition: "-4px -4px",
-                          WebkitMaskPosition: "-4px -4px",
-                        }}
-                      >
-                        <span className="text-2xl">{selectedStamp.value}</span>
-                      </div>
+                      <span className="text-3xl">{selectedStamp.value}</span>
                     ) : (
                       <img 
                         src={IMAGE_STAMPS.find(s => s.id === selectedStamp.value)?.src} 
@@ -705,23 +693,11 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
                           setShowStampPicker(false);
                         }}
                         className={cn(
-                          "w-10 h-12 flex items-center justify-center hover:ring-2 hover:ring-muted transition-all",
-                          selectedStamp?.type === 'emoji' && selectedStamp?.value === stamp && "ring-2 ring-primary"
+                          "w-10 h-10 rounded-lg flex items-center justify-center text-2xl hover:bg-muted transition-colors",
+                          selectedStamp?.type === 'emoji' && selectedStamp?.value === stamp && "bg-primary/20 ring-2 ring-primary"
                         )}
                       >
-                        <div 
-                          className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center shadow-sm"
-                          style={{
-                            maskImage: "radial-gradient(circle, transparent 25%, black 25%)",
-                            WebkitMaskImage: "radial-gradient(circle, transparent 25%, black 25%)",
-                            maskSize: "6px 6px",
-                            WebkitMaskSize: "6px 6px",
-                            maskPosition: "-3px -3px",
-                            WebkitMaskPosition: "-3px -3px",
-                          }}
-                        >
-                          <span className="text-lg">{stamp}</span>
-                        </div>
+                        {stamp}
                       </button>
                     ))}
                   </div>
