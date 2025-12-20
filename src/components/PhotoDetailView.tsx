@@ -316,10 +316,10 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
         stamp.style.cssText = `
           width: 56px;
           height: 72px;
-          background: white;
           display: flex;
           align-items: center;
           justify-content: center;
+          position: relative;
           -webkit-mask-image: radial-gradient(circle, transparent 25%, black 25%);
           mask-image: radial-gradient(circle, transparent 25%, black 25%);
           -webkit-mask-size: 10px 10px;
@@ -331,7 +331,17 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
         `;
         
         if (selectedStamp.type === 'emoji') {
-          stamp.innerHTML = `<span style="font-size: 30px;">${selectedStamp.value}</span>`;
+          // Emoji on vintage blank stamp background
+          stamp.style.background = 'linear-gradient(135deg, #f8f4e8 0%, #e8dcc8 50%, #d4c4a8 100%)';
+          stamp.innerHTML = `
+            <div style="position: absolute; inset: 3px; border: 2px solid rgba(139,115,85,0.4); border-radius: 2px; box-shadow: inset 0 0 8px rgba(139,115,85,0.2);"></div>
+            <div style="position: absolute; top: 5px; left: 5px; width: 8px; height: 8px; border-top: 1px solid rgba(139,115,85,0.5); border-left: 1px solid rgba(139,115,85,0.5);"></div>
+            <div style="position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-top: 1px solid rgba(139,115,85,0.5); border-right: 1px solid rgba(139,115,85,0.5);"></div>
+            <div style="position: absolute; bottom: 5px; left: 5px; width: 8px; height: 8px; border-bottom: 1px solid rgba(139,115,85,0.5); border-left: 1px solid rgba(139,115,85,0.5);"></div>
+            <div style="position: absolute; bottom: 5px; right: 5px; width: 8px; height: 8px; border-bottom: 1px solid rgba(139,115,85,0.5); border-right: 1px solid rgba(139,115,85,0.5);"></div>
+            <span style="font-size: 24px; position: relative; z-index: 10;">${selectedStamp.value}</span>
+            <span style="position: absolute; bottom: 6px; font-size: 5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #8b7355;">Postage</span>
+          `;
         } else {
           const imgStamp = IMAGE_STAMPS.find(s => s.id === selectedStamp.value);
           if (imgStamp) {
@@ -646,13 +656,41 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
                   className={cn(
                     "w-14 h-[72px] transition-all cursor-pointer active:scale-95 overflow-hidden",
                     selectedStamp 
-                      ? "bg-white flex items-center justify-center [mask-image:radial-gradient(circle,transparent_25%,black_25%)] [mask-size:10px_10px] [mask-repeat:round] [mask-position:-5px_-5px]" 
+                      ? "[mask-image:radial-gradient(circle,transparent_25%,black_25%)] [mask-size:10px_10px] [mask-repeat:round] [mask-position:-5px_-5px]" 
                       : "flex flex-col items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded hover:border-primary/50 hover:bg-primary/10"
                   )}
                 >
                   {selectedStamp ? (
                     selectedStamp.type === 'emoji' ? (
-                      <span className="text-3xl">{selectedStamp.value}</span>
+                      // Emoji on vintage blank stamp background
+                      <div 
+                        className="w-full h-full flex items-center justify-center relative"
+                        style={{
+                          background: 'linear-gradient(135deg, #f8f4e8 0%, #e8dcc8 50%, #d4c4a8 100%)',
+                        }}
+                      >
+                        {/* Vintage stamp border */}
+                        <div 
+                          className="absolute inset-[3px] border-2 border-[#8b7355]/40 rounded-sm"
+                          style={{
+                            boxShadow: 'inset 0 0 8px rgba(139,115,85,0.2)',
+                          }}
+                        />
+                        {/* Decorative corner flourishes */}
+                        <div className="absolute top-[5px] left-[5px] w-2 h-2 border-t border-l border-[#8b7355]/50" />
+                        <div className="absolute top-[5px] right-[5px] w-2 h-2 border-t border-r border-[#8b7355]/50" />
+                        <div className="absolute bottom-[5px] left-[5px] w-2 h-2 border-b border-l border-[#8b7355]/50" />
+                        <div className="absolute bottom-[5px] right-[5px] w-2 h-2 border-b border-r border-[#8b7355]/50" />
+                        {/* Emoji */}
+                        <span className="text-2xl relative z-10">{selectedStamp.value}</span>
+                        {/* Subtle vintage text at bottom */}
+                        <span 
+                          className="absolute bottom-[6px] text-[5px] font-semibold uppercase tracking-wider"
+                          style={{ color: '#8b7355' }}
+                        >
+                          Postage
+                        </span>
+                      </div>
                     ) : (
                       <img 
                         src={IMAGE_STAMPS.find(s => s.id === selectedStamp.value)?.src} 
