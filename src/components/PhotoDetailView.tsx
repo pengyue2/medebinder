@@ -760,12 +760,25 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
                     ))}
                   </div>
                   
-                  <button
-                    onClick={() => setShowStampPicker(false)}
-                    className="w-full mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    Cancel
-                  </button>
+                  <div className="flex gap-2 mt-3">
+                    {selectedStamp && (
+                      <button
+                        onClick={() => {
+                          setSelectedStamp(null);
+                          setShowStampPicker(false);
+                        }}
+                        className="flex-1 text-xs text-destructive hover:text-destructive/80 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setShowStampPicker(false)}
+                      className="flex-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
