@@ -14,7 +14,6 @@ import stampAirmail from "@/assets/stamp-airmail.png";
 import stampScenic from "@/assets/stamp-scenic.png";
 import stampVoyage from "@/assets/stamp-voyage.png";
 import stampParis from "@/assets/stamp-paris.png";
-import stampBlank from "@/assets/stamp-blank.png";
 
 interface PhotoDetailViewProps {
   photo: Photo;
@@ -304,29 +303,42 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
 
       // Stamp - top right (only show if selected)
       if (selectedStamp) {
+        // Shadow wrapper - since mask clips shadow
         const stampWrapper = document.createElement("div");
         stampWrapper.style.cssText = `
           position: absolute;
           top: 12px;
           right: 12px;
-          width: 56px;
-          height: 72px;
           filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.25));
         `;
         
+        const stamp = document.createElement("div");
+        stamp.style.cssText = `
+          width: 56px;
+          height: 72px;
+          background: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          -webkit-mask-image: radial-gradient(circle, transparent 25%, black 25%);
+          mask-image: radial-gradient(circle, transparent 25%, black 25%);
+          -webkit-mask-size: 10px 10px;
+          mask-size: 10px 10px;
+          -webkit-mask-repeat: round;
+          mask-repeat: round;
+          -webkit-mask-position: -5px -5px;
+          mask-position: -5px -5px;
+        `;
+        
         if (selectedStamp.type === 'emoji') {
-          // Use blank stamp as background with emoji overlay
-          stampWrapper.style.cssText += `position: relative;`;
-          stampWrapper.innerHTML = `
-            <img src="${stampBlank}" alt="Stamp" style="width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0;" crossorigin="anonymous" />
-            <span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 24px;">${selectedStamp.value}</span>
-          `;
+          stamp.innerHTML = `<span style="font-size: 30px;">${selectedStamp.value}</span>`;
         } else {
           const imgStamp = IMAGE_STAMPS.find(s => s.id === selectedStamp.value);
           if (imgStamp) {
-            stampWrapper.innerHTML = `<img src="${imgStamp.src}" alt="${imgStamp.alt}" style="width: 100%; height: 100%; object-fit: cover;" crossorigin="anonymous" />`;
+            stamp.innerHTML = `<img src="${imgStamp.src}" alt="${imgStamp.alt}" style="width: 100%; height: 100%; object-fit: cover;" crossorigin="anonymous" />`;
           }
         }
+        stampWrapper.appendChild(stamp);
         backCard.appendChild(stampWrapper);
       }
 
@@ -634,16 +646,13 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
                   className={cn(
                     "w-14 h-[72px] transition-all cursor-pointer active:scale-95 overflow-hidden",
                     selectedStamp 
-                      ? "relative" 
+                      ? "bg-white flex items-center justify-center [mask-image:radial-gradient(circle,transparent_25%,black_25%)] [mask-size:10px_10px] [mask-repeat:round] [mask-position:-5px_-5px]" 
                       : "flex flex-col items-center justify-center bg-gradient-to-br from-primary/20 to-accent/20 border-2 border-dashed border-muted-foreground/40 rounded hover:border-primary/50 hover:bg-primary/10"
                   )}
                 >
                   {selectedStamp ? (
                     selectedStamp.type === 'emoji' ? (
-                      <div className="relative w-full h-full">
-                        <img src={stampBlank} alt="Stamp" className="w-full h-full object-cover" />
-                        <span className="absolute inset-0 flex items-center justify-center text-2xl">{selectedStamp.value}</span>
-                      </div>
+                      <span className="text-3xl">{selectedStamp.value}</span>
                     ) : (
                       <img 
                         src={IMAGE_STAMPS.find(s => s.id === selectedStamp.value)?.src} 
@@ -684,12 +693,11 @@ const PhotoDetailView = ({ photo, onClose, onToggleFavorite }: PhotoDetailViewPr
                           setShowStampPicker(false);
                         }}
                         className={cn(
-                          "w-10 h-12 rounded overflow-hidden relative hover:ring-2 hover:ring-muted transition-all",
-                          selectedStamp?.type === 'emoji' && selectedStamp?.value === stamp && "ring-2 ring-primary"
+                          "w-10 h-10 rounded-lg flex items-center justify-center text-2xl hover:bg-muted transition-colors",
+                          selectedStamp?.type === 'emoji' && selectedStamp?.value === stamp && "bg-primary/20 ring-2 ring-primary"
                         )}
                       >
-                        <img src={stampBlank} alt="Stamp" className="w-full h-full object-cover" />
-                        <span className="absolute inset-0 flex items-center justify-center text-lg">{stamp}</span>
+                        {stamp}
                       </button>
                     ))}
                   </div>
