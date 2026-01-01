@@ -100,9 +100,53 @@ const TutorialOverlay = () => {
               transition={{ duration: 0.2 }}
               className="flex flex-col items-center text-center"
             >
-              {/* Icon */}
-              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6">
-                <Icon className="w-12 h-12 text-primary" />
+              {/* Icon with animations */}
+              <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center mb-6 relative">
+                {currentStep === 0 && (
+                  <motion.div
+                    animate={{ x: [0, 15, 0, -15, 0] }}
+                    transition={{ 
+                      duration: 2, 
+                      repeat: Infinity, 
+                      ease: "easeInOut",
+                      repeatDelay: 0.5
+                    }}
+                  >
+                    <Icon className="w-12 h-12 text-primary" />
+                  </motion.div>
+                )}
+                {currentStep === 1 && (
+                  <motion.div
+                    className="relative"
+                  >
+                    <Icon className="w-12 h-12 text-primary" />
+                    <motion.div
+                      className="absolute inset-0 flex items-center justify-center"
+                      animate={{ rotate: 360 }}
+                      transition={{ 
+                        duration: 3, 
+                        repeat: Infinity, 
+                        ease: "linear"
+                      }}
+                    >
+                      <div className="w-16 h-16 rounded-full border-2 border-transparent border-t-primary/50 border-r-primary/30" />
+                    </motion.div>
+                  </motion.div>
+                )}
+                {currentStep === 2 && (
+                  <motion.div
+                    animate={{ rotateY: [0, 180, 360] }}
+                    transition={{ 
+                      duration: 2.5, 
+                      repeat: Infinity, 
+                      ease: "easeInOut",
+                      repeatDelay: 1
+                    }}
+                    style={{ perspective: 1000 }}
+                  >
+                    <Icon className="w-12 h-12 text-primary" />
+                  </motion.div>
+                )}
               </div>
 
               {/* Title */}
