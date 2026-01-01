@@ -7,9 +7,12 @@ import DayCompleteWidget from "@/components/DayCompleteWidget";
 import SwipeSort from "@/components/SwipeSort";
 import CreateBinderModal from "@/components/CreateBinderModal";
 import TutorialOverlay from "@/components/TutorialOverlay";
+import QuickPostcardCard from "@/components/QuickPostcardCard";
+import PhotoDetailView from "@/components/PhotoDetailView";
 import { useApp } from "@/context/AppContext";
 import { useBinders } from "@/context/BindersContext";
 import { useToast } from "@/hooks/use-toast";
+import type { Photo } from "@/types/binder";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +30,7 @@ const Index = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [triggerUpload, setTriggerUpload] = useState(false);
+  const [quickPostcardPhoto, setQuickPostcardPhoto] = useState<Photo | null>(null);
   
   const { 
     unsortedPhotos, 
@@ -103,6 +107,23 @@ const Index = () => {
     }
   }, [isSearchOpen, setSearchQuery]);
 
+  const handleQuickPostcard = useCallback((photo: { id: string; url: string }) => {
+    setQuickPostcardPhoto({
+      id: photo.id,
+      url: photo.url,
+      alt: "Quick postcard photo",
+      isFavorite: false,
+    });
+  }, []);
+
+  const handleQuickPostcardClose = useCallback(() => {
+    // Revoke the object URL to free memory
+    if (quickPostcardPhoto?.url.startsWith("blob:")) {
+      URL.revokeObjectURL(quickPostcardPhoto.url);
+    }
+    setQuickPostcardPhoto(null);
+  }, [quickPostcardPhoto]);
+
   const coverImage = unsortedPhotos[0]?.url;
 
   return (
@@ -167,6 +188,11 @@ const Index = () => {
             />
           </div>
         )}
+
+        {/* Quick Postcard Try-out Card */}
+        <div className="mb-6">
+          <QuickPostcardCard onPhotoSelected={handleQuickPostcard} />
+        </div>
 
         {/* In-progress state - no photos left but goal not reached yet */}
         {!dailyProgress.isComplete && unsortedCount === 0 && dailyProgress.organizedCount > 0 && (
@@ -281,6 +307,14 @@ const Index = () => {
         onClose={() => setShowCreateBinder(false)}
         onCreate={handleCreateBinder}
       />
+
+      {/* Quick Postcard Detail View */}
+      {quickPostcardPhoto && (
+        <PhotoDetailView
+          photo={quickPostcardPhoto}
+          onClose={handleQuickPostcardClose}
+        />
+      )}
 
       {/* First-time user tutorial */}
       <TutorialOverlay />
