@@ -6,6 +6,7 @@ import DailyStackWidget from "@/components/DailyStackWidget";
 import DayCompleteWidget from "@/components/DayCompleteWidget";
 import SwipeSort from "@/components/SwipeSort";
 import CreateBinderModal from "@/components/CreateBinderModal";
+import TutorialOverlay from "@/components/TutorialOverlay";
 import { useApp } from "@/context/AppContext";
 import { useBinders } from "@/context/BindersContext";
 import { useToast } from "@/hooks/use-toast";
@@ -280,6 +281,9 @@ const Index = () => {
         onClose={() => setShowCreateBinder(false)}
         onCreate={handleCreateBinder}
       />
+
+      {/* First-time user tutorial */}
+      <TutorialOverlay />
     </div>
   );
 };
