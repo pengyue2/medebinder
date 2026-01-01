@@ -1,6 +1,11 @@
 import { useRef } from "react";
 import { motion } from "framer-motion";
-import { Wand2 } from "lucide-react";
+import { Wand2, Info } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface QuickPostcardCardProps {
   onPhotoSelected: (photo: { id: string; url: string }) => void;
@@ -41,8 +46,23 @@ const QuickPostcardCard = ({ onPhotoSelected }: QuickPostcardCardProps) => {
         onClick={handleClick}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className="w-full p-5 rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 border border-primary/30 text-left transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+        className="w-full p-5 rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 border border-primary/30 text-left transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 relative"
       >
+        {/* Info tooltip */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div 
+              className="absolute top-3 right-3 p-1.5 rounded-full bg-background/50 hover:bg-background/80 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Info className="w-4 h-4 text-muted-foreground" />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[200px] text-center">
+            <p>Quick demo! Pick any photo to instantly create a postcard—no sorting required.</p>
+          </TooltipContent>
+        </Tooltip>
+
         <div className="flex items-center gap-4">
           {/* Icon */}
           <div className="w-14 h-14 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
@@ -60,7 +80,7 @@ const QuickPostcardCard = ({ onPhotoSelected }: QuickPostcardCardProps) => {
           </div>
 
           {/* Arrow indicator */}
-          <div className="text-primary/60">
+          <div className="text-primary/60 mr-6">
             <svg
               className="w-5 h-5"
               fill="none"
